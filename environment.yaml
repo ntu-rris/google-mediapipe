@@ -1,0 +1,13 @@
+name: mp
+channels:
+  - open3d-admin
+  - conda-forge
+  - defaults
+dependencies:
+  - numpy=1.19.1
+  - open3d=0.10.0.0
+  - pip=20.2.2  
+  - python=3.7.7
+  - pip:
+    - opencv-python==4.2.0.34
+    - mediapipe==0.8.0
