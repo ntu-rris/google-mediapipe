@@ -41,6 +41,10 @@ conda activate mp
 * [05_hand_body](code/05_hand_body.py): Test with single image of upper body to detect both upper body and hand joints (Note: the image for subject with body marker is adapted from [An Asian-centric human movement database capturing activities of daily living](https://www.nature.com/articles/s41597-020-00627-7?sf237508323=1) and the image of Mona Lisa is adapted from [Wiki](https://upload.wikimedia.org/wikipedia/commons/e/ec/Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg))
 ![](doc/05_hand_body.png)
 
+* [06_hand_body_video](code/06_hand_body_video.py): Test with video input to detect both upper body and hand joints (Note: the video is adapted from [Fugl-Meyer Assessment of Motor Recovery after Stroke](https://www.youtube.com/watch?v=B70qDfl3LyA&gl=SG))
+Click on the image below to view the video in YouTube:
+[![](https://img.youtube.com/vi/pxVj8oB-g-w/0.jpg)](https://www.youtube.com/watch?v=pxVj8oB-g-w)
+
 ## Limitations:
 Estimating 3D hand pose from a single 2D image is an ill-posed problem and extremely challenging, thus the resulting hand ROM may not be accurate!
 Please refer to the [model card](https://drive.google.com/file/d/1yiPfkhb4hSbXJZaSq9vDmhz24XVZmxpL/view) for more details on other types of limitations such as lighting, motion blur, etc.
