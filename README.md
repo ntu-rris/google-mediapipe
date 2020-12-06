@@ -10,6 +10,9 @@ This repo contains sample codes and applications using [Google MediaPipe](https:
 
 ![](doc/01_video.gif)
 
+[![Body + Hand for Fugl-Meyer Assessment of motor recovery after stroke](https://img.youtube.com/vi/pxVj8oB-g-w/0.jpg)](https://www.youtube.com/watch?v=pxVj8oB-g-w)
+
+
 ## Installation
 The simplest way to run our implementation is to use anaconda.
 
