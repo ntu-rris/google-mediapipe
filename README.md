@@ -10,7 +10,9 @@ This repo contains sample codes and applications using [Google MediaPipe](https:
 
 ![](doc/01_video.gif)
 
-[![Body + Hand for Fugl-Meyer Assessment of motor recovery after stroke](https://img.youtube.com/vi/pxVj8oB-g-w/0.jpg)](https://www.youtube.com/watch?v=pxVj8oB-g-w)
+Click on the image below to view the video on YouTube:
+
+[![](https://img.youtube.com/vi/pxVj8oB-g-w/0.jpg)](https://www.youtube.com/watch?v=pxVj8oB-g-w)
 
 
 ## Installation
@@ -42,7 +44,7 @@ conda activate mp
 ![](doc/05_hand_body.png)
 
 * [06_hand_body_video](code/06_hand_body_video.py): Test with video input to detect both upper body and hand joints (Note: the video is adapted from [Fugl-Meyer Assessment of Motor Recovery after Stroke](https://www.youtube.com/watch?v=B70qDfl3LyA&gl=SG))
-Click on the image below to view the video in YouTube:
+Click on the image below to view the video on YouTube:
 
 [![](https://img.youtube.com/vi/pxVj8oB-g-w/0.jpg)](https://www.youtube.com/watch?v=pxVj8oB-g-w)
 
