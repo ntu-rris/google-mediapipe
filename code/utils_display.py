@@ -1,5 +1,5 @@
 ###############################################################################
-### Useful function for visualization of hand tracking
+### Useful function for visualization of hand and upper body tracking
 ###############################################################################
 
 import cv2
@@ -342,3 +342,130 @@ class DisplayHand:
                 cv2.FONT_HERSHEY_SIMPLEX, 1, (0,255,255), 2) # Yellow            
 
         return img
+
+
+class DisplayBody:
+    def __init__(self, draw3d=False):
+        super(DisplayBody, self).__init__()
+
+        # Define kinematic tree linking keypoint together to form skeleton
+        self.ktree = [
+            # Face
+            0,       # Nose
+            2,0,2,   # Right eye
+            5,0,5,   # Left eye
+            2,5,     # Ear
+            10,9,    # Mouth
+            # Arm
+            23,11,11,12,13,14, # Upper and lower arm
+            15,16,17,18,15,16, # Hand
+            # Torso
+            24,12]
+
+        # Define color for 25 keypoint
+        self.color = [[60,0,255], # Nose
+                      [60,0,255],[120,0,255],[180,0,255], # Right eye
+                      [60,0,255],[120,0,255],[180,0,255], # Left eye
+                      [240,0,255],[240,0,255], # Ear
+                      [255,0,255],[255,0,255], # Mouth
+                      [0,255,0],[60,255,0],[255,60,0],[0,255,60],[255,120,0],[0,255,120],
+                      [255,180,0],[0,255,180],[255,240,0],[0,255,240],[255,255,0],[0,255,255],
+                      [0,120,255],[0,180,255]]
+        self.color = np.asarray(self.color)
+        self.color_ = self.color / 255 # For Open3D RGB
+        self.color[:,[0,2]] = self.color[:,[2,0]] # For OpenCV BGR
+        self.color = self.color.tolist()
+
+
+        ############################
+        ### Open3D visualization ###
+        ############################
+        if draw3d:
+            self.vis = o3d.visualization.Visualizer()
+            self.vis.create_window(width=640, height=480)
+            self.vis.get_render_option().point_size = 8.0
+            joint = np.zeros((25,3))
+
+            # Draw 25 joints
+            self.pcd = o3d.geometry.PointCloud()
+            self.pcd.points = o3d.utility.Vector3dVector(joint)
+            self.pcd.colors = o3d.utility.Vector3dVector(self.color_)
+            
+            # Draw 20 bones
+            self.bone = o3d.geometry.LineSet()
+            self.bone.points = o3d.utility.Vector3dVector(joint)
+            self.bone.colors = o3d.utility.Vector3dVector(self.color_[1:])
+            self.bone.lines  = o3d.utility.Vector2iVector(
+                [[0,2],  [1,2], [2,3],    # Right eye
+                 [0,5],  [4,5], [5,6],    # Left eye
+                 [2,7],  [6,8],           # Ear
+                 [9,10], [9,10],          # Mouth
+                 [11,23],[11,12],[11,13],[12,14],[13,15],[14,16],
+                 [15,17],[16,18],[17,19],[18,20],[15,21],[16,22],
+                 [23,24],[12,24]])
+
+            # Draw world reference frame
+            frame = o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.5)
+
+            # Add geometry to visualize
+            self.vis.add_geometry(frame)
+            self.vis.add_geometry(self.pcd)
+            self.vis.add_geometry(self.bone)
+
+            # Set camera view
+            ctr = self.vis.get_view_control()
+            ctr.set_up([0,-1,0]) # Set up as -y axis
+            ctr.set_front([0,0,-1]) # Set to looking towards -z axis
+            ctr.set_lookat([0.5,0.5,0]) # Set to center of view
+            ctr.set_zoom(1.5)
+
+
+    def draw2d(self, img, param):
+        img_height, img_width, _ = img.shape
+
+        p = param
+        if p['detect']:
+            # Loop through keypoint for upper body
+            for i in range(25):
+                x = int(p['keypt'][i,0])
+                y = int(p['keypt'][i,1])
+                if x>0 and y>0 and x<img_width and y<img_height:
+                    # Draw skeleton
+                    start = p['keypt'][self.ktree[i],:]
+                    x_ = int(start[0])
+                    y_ = int(start[1])
+                    if x_>0 and y_>0 and x_<img_width and y_<img_height:
+                        cv2.line(img, (x_, y_), (x, y), self.color[i], 2)
+
+                    # Draw keypoint
+                    cv2.circle(img, (x, y), 3, self.color[i], -1)
+
+                    # Number keypoint
+                    # cv2.putText(img, '%d' % (i), (x, y), 
+                    #     cv2.FONT_HERSHEY_SIMPLEX, 0.5, self.color[i])
+
+                    # Label visibility and presence
+                    # cv2.putText(img, '%.1f, %.1f' % (p['visible'][i], p['presence'][i]),
+                    #     (x, y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, self.color[i])
+
+        # Label fps
+        if p['fps']>0:
+            cv2.putText(img, 'FPS: %.1f' % (p['fps']),
+                (0, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 2)   
+
+        return img
+
+
+
+    def draw3d(self, param):
+
+        if param['detect']:
+            self.pcd.points = o3d.utility.Vector3dVector(param['joint'])
+            self.bone.points = o3d.utility.Vector3dVector(param['joint'])
+        else:
+            self.pcd.points = o3d.utility.Vector3dVector(np.zeros((25,3)))
+            self.bone.points = o3d.utility.Vector3dVector(np.zeros((25,3)))
+
+        self.vis.update_geometry(None)
+        self.vis.poll_events()
+        self.vis.update_renderer()

@@ -1,5 +1,5 @@
 ###############################################################################
-### Google MediaPipe for hand pose estimation
+### Google MediaPipe for hand and upper body pose estimation
 ### https://github.com/google/mediapipe
 ###############################################################################
 
@@ -98,6 +98,68 @@ class MediaPipeHand:
         result = self.hand.process(img)
 
         # Convert hand result to my own param
+        param = self.result_to_param(result, img)
+
+        return param
+
+
+class MediaPipeBody:
+    def __init__(self, static_image_mode=True):
+        super(MediaPipeBody, self).__init__()
+
+        # Access MediaPipe Solutions Python API
+        mp_body = mp.solutions.pose
+
+        # Initialize MediaPipe Body
+        # Video: static_image_mode=False
+        # Picture: static_image_mode=True
+        self.body = mp_body.Pose(
+            static_image_mode=static_image_mode,
+            min_detection_confidence=0.5)
+
+        # Define body parameter
+        self.param = {
+                'keypt'   : np.zeros((25,2)), # 2D keypt in image coordinate (pixel)
+                'joint'   : np.zeros((25,3)), # 3D joint in relative coordinate
+                'visible' : np.zeros(25), # Visibility
+                'presence': np.zeros(25), # Presence (Note: Its always zero!)
+                'detect'  : False, # Whether upper body is detected
+                'fps'     : -1, # Frame per sec
+            }
+
+
+    def result_to_param(self, result, img):
+        # Convert mediapipe body result to my own param
+        img_height, img_width, _ = img.shape
+
+        if result.pose_landmarks is None:
+            self.param['detect'] = False
+        else:
+            self.param['detect'] = True
+
+            # Loop through 25 landmark of upper body
+            for j, lm in enumerate(result.pose_landmarks.landmark):
+                self.param['keypt'][j,0] = lm.x * img_width # Convert normalized coor to pixel [0,1] -> [0,width]
+                self.param['keypt'][j,1] = lm.y * img_height # Convert normalized coor to pixel [0,1] -> [0,height]
+
+                self.param['joint'][j,0] = lm.x
+                self.param['joint'][j,1] = lm.y
+                self.param['joint'][j,2] = lm.z # Note: z value should be discarded as the model is currently not fully trained to predict depth
+
+                self.param['visible'][j] = lm.visibility
+                self.param['presence'][j] = lm.presence
+
+        return self.param
+
+
+    def forward(self, img):
+        # Preprocess image
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
+        # Extract body result
+        result = self.body.process(img)
+
+        # Convert body result to my own param
         param = self.result_to_param(result, img)
 
         return param
