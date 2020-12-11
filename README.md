@@ -1,12 +1,15 @@
 # Google MediaPipe
 
-This repo contains sample codes and applications using [Google MediaPipe](https://github.com/google/mediapipe) (python API) for realtime 3D hand tracking and 2D upper body pose estimation.
+This repo contains sample codes and applications using [Google MediaPipe](https://github.com/google/mediapipe) (python API) for realtime 3D hand tracking and 2D upper/full body pose estimation with face mesh.
 
 ## Hand Tracking
 [**Blog**](https://ai.googleblog.com/2019/08/on-device-real-time-hand-tracking-with.html) | [**Code**](https://google.github.io/mediapipe/solutions/hands.html) | [**Paper**](https://arxiv.org/abs/2006.10214) |  [**Video**](https://www.youtube.com/watch?v=I-UOrvxxXEk) | [**Model Card**](https://drive.google.com/file/d/1yiPfkhb4hSbXJZaSq9vDmhz24XVZmxpL/view)
 
 ## Body Tracking
 [**Blog**](https://ai.googleblog.com/2020/08/on-device-real-time-body-pose-tracking.html) | [**Code**](https://google.github.io/mediapipe/solutions/pose) | [**Paper**](https://arxiv.org/abs/2006.10204) |  [**Video**](https://www.youtube.com/watch?v=YPpUOTRn5tA&feature=emb_logo) | [**Model Card**](https://drive.google.com/file/d/1zhYyUXhQrb_Gp0lKUFv1ADT3OCxGEQHS/view)
+
+## Holistic Tracking (Face + Body + Hands)
+[**Blog**](https://ai.googleblog.com/2020/12/mediapipe-holistic-simultaneous-face.html) | [**Code**](https://google.github.io/mediapipe/solutions/holistic#smooth_landmarks)
 
 ![](doc/01_video.gif)
 
