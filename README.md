@@ -59,19 +59,19 @@ conda activate mp
 ## Demo Overview
 <!-- Link to create gif from images https://ezgif.com/maker -->
 
-[![](doc/00_image.gif)](#Single-Image)
+![](doc/00_image.gif)
 
 [![](https://img.youtube.com/vi/rqFp-ZH5tpo/10.jpg)](https://www.youtube.com/watch?v=rqFp-ZH5tpo)
 
-[![](doc/02_gesture.gif)](gesture-recognition)
+![](doc/02_gesture.gif)
 
-[![](doc/03_game_rps.gif)](rock-paper-scissor-game)
+![](doc/03_game_rps.gif)
 
-[![](doc/04_hand_rom.gif)](measure-hand-range-of-motion)
+![](doc/04_hand_rom.gif)
 
 
 ## Usage
-* [**Single Image**](#single-image):
+* [**Single Image**](code/00_image.py):
 
 4 different modes are available and sample images are located in [data/sample/](data/sample/) folder
 ```
@@ -83,7 +83,7 @@ python 00_image.py --mode holistic
 Note: The sample images for subject with body marker are adapted from [An Asian-centric human movement database capturing activities of daily living](https://www.nature.com/articles/s41597-020-00627-7?sf237508323=1) and the image of Mona Lisa is adapted from [Wiki](https://upload.wikimedia.org/wikipedia/commons/e/ec/Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg)
 
 
-* [**Video Input**](#video-input):
+* [**Video Input**](code/01_video.py):
 
 4 different modes are available and video capture can be done online through [webcam](https://github.com/ntu-rris/google-mediapipe/blob/5e155130ba3477b84e873c57251c59f4206da3ee/code/01_video.py#L45) or offline from your own [.mp4 file](https://github.com/ntu-rris/google-mediapipe/blob/5e155130ba3477b84e873c57251c59f4206da3ee/code/01_video.py#L46)
 ```
@@ -96,20 +96,20 @@ python 01_video.py --mode holistic
 Note: It takes around 10 to 30 FPS on CPU, depending on the mode selected. The [video](https://www.youtube.com/watch?v=rqFp-ZH5tpo) demonstrating supported mini-squats is adapted from [National Stroke Association](https://www.youtube.com/watch?v=WLjOoQUgWs4)
 
 
-* [**Gesture Recognition**](#gesture-recognition):
+* [**Gesture Recognition**](code/02_gesture.py):
 2 modes are available: Use evaluation mode to perform recognition of 11 gestures and use train mode to log your own training data
 ```
 python 02_gesture.py --mode eval
 python 02_gesture.py --mode train
 ```
 
-* [**Rock Paper Scissor Game**](#rock-paper-scissor-game):
+* [**Rock Paper Scissor Game**](code/03_game_rps.py):
 Simple game of rock paper scissor requires a pair of hands facing the camera
 ```
 python 03_game_rps.py
 ```
 
-* [**Measure Hand Range of Motion**](#measure-hand-range-of-motion):
+* [**Measure Hand Range of Motion**](code/04_hand_rom.py):
 2 modes are available: Use evaluation mode to perform hand rom recognition and use train mode to log your own training data
 ```
 python 04_hand_rom.py --mode eval
