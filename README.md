@@ -59,7 +59,7 @@ conda activate mp
 ## Demo Overview
 <!-- Link to create gif from images https://ezgif.com/maker -->
 
-[![](doc/00_image.gif)](single-image)
+[![](doc/00_image.gif)](#Single-Image)
 
 [![](https://img.youtube.com/vi/rqFp-ZH5tpo/10.jpg)](https://www.youtube.com/watch?v=rqFp-ZH5tpo)
 
@@ -71,7 +71,7 @@ conda activate mp
 
 
 ## Usage
-[**Single Image**](#single-image):
+* [**Single Image**](#single-image):
 
 4 different modes are available and sample images are located in [data/sample/](data/sample/) folder
 ```
@@ -83,7 +83,7 @@ python 00_image.py --mode holistic
 Note: The sample images for subject with body marker are adapted from [An Asian-centric human movement database capturing activities of daily living](https://www.nature.com/articles/s41597-020-00627-7?sf237508323=1) and the image of Mona Lisa is adapted from [Wiki](https://upload.wikimedia.org/wikipedia/commons/e/ec/Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg)
 
 
-[**Video Input**](#video-input):
+* [**Video Input**](#video-input):
 
 4 different modes are available and video capture can be done online through [webcam](https://github.com/ntu-rris/google-mediapipe/blob/5e155130ba3477b84e873c57251c59f4206da3ee/code/01_video.py#L45) or offline from your own [.mp4 file](https://github.com/ntu-rris/google-mediapipe/blob/5e155130ba3477b84e873c57251c59f4206da3ee/code/01_video.py#L46)
 ```
