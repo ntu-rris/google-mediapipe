@@ -6,16 +6,17 @@
 ###############################################################################
 
 import cv2
+
 from utils_display import DisplayHand
 from utils_mediapipe import MediaPipeHand
 from utils_joint_angle import GestureRecognition
 
 
 # Load mediapipe hand class
-hand = MediaPipeHand(static_image_mode=False, max_num_hands=2)
+pipe = MediaPipeHand(static_image_mode=False, max_num_hands=2)
 
 # Load display class
-disp = DisplayHand()
+disp = DisplayHand(max_num_hands=2)
 
 # Start video capture
 cap = cv2.VideoCapture(0) # By default webcam is index 0
@@ -36,7 +37,7 @@ while cap.isOpened():
     img.flags.writeable = False
 
     # Feedforward to extract keypoint
-    param = hand.forward(img)
+    param = pipe.forward(img)
     # Evaluate gesture for all hands
     for p in param:
         if p['class'] is not None:
@@ -45,11 +46,11 @@ while cap.isOpened():
     img.flags.writeable = True
 
     # Display keypoint and result of rock paper scissor game
-    cv2.imshow('Game: Rock Paper Scissor', disp.drawGameRPS(img.copy(), param))
+    cv2.imshow('Game: Rock Paper Scissor', disp.draw_game_rps(img.copy(), param))
 
     key = cv2.waitKey(1)
     if key==27:
         break
 
-hand.hand.close()
+pipe.pipe.close()
 cap.release()

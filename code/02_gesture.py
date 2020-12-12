@@ -4,11 +4,12 @@
 ### Output: 2D display of hand keypoint 
 ###         with gesture classification
 ### Usage : python 02_gesture.py -m train (to log data)
-### Usage : python 02_gesture.py -m eval  (to perform gesture recognition)
+###       : python 02_gesture.py -m eval  (to perform gesture recognition)
 ###############################################################################
 
 import cv2
 import argparse
+
 from utils_display import DisplayHand
 from utils_mediapipe import MediaPipeHand
 from utils_joint_angle import GestureRecognition
@@ -20,10 +21,10 @@ args = parser.parse_args()
 mode = args.mode
 
 # Load mediapipe hand class
-hand = MediaPipeHand(static_image_mode=False, max_num_hands=2)
+pipe = MediaPipeHand(static_image_mode=False, max_num_hands=1)
 
 # Load display class
-disp = DisplayHand()
+disp = DisplayHand(max_num_hands=1)
 
 # Start video capture
 cap = cv2.VideoCapture(0) # By default webcam is index 0
@@ -44,7 +45,7 @@ while cap.isOpened():
     img.flags.writeable = False
 
     # Feedforward to extract keypoint
-    param = hand.forward(img)
+    param = pipe.forward(img)
     if (param[0]['class'] is not None) and (mode=='eval'):
         param[0]['gesture'] = gest.eval(param[0]['angle'])
 
@@ -68,5 +69,5 @@ while cap.isOpened():
     if key==32 and (param[0]['class'] is not None) and (mode=='eval'):
         cv2.waitKey(0) # Pause display until user press any key        
 
-hand.hand.close()
+pipe.pipe.close()
 cap.release()
