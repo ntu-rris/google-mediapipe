@@ -43,12 +43,13 @@ else:
 
 # Start video capture
 cap = cv2.VideoCapture(0) # By default webcam is index 0
-# cap = cv2.VideoCapture('../data/vidoe.mp4') # Read from .mp4 file
+# cap = cv2.VideoCapture('../data/video.mp4') # Read from .mp4 file
+# cap.set(cv2.CAP_PROP_POS_FRAMES, 1) # Set starting position of frame
 
 # # Log video
 # fps = 30
 # ret, img = cap.read()
-# width, height = img.shape[1], img.shape[0]
+# width, height = int(cap.get(3)), int(cap.get(4))
 # fourcc = cv2.VideoWriter_fourcc(*'mp4v') # Be sure to use lower case
 # video = cv2.VideoWriter('../data/video_.mp4', fourcc, fps, (width, height))
 

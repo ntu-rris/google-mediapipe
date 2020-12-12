@@ -27,19 +27,19 @@ mode = args.mode
 if mode=='face':
     pipe = MediaPipeFace(static_image_mode=True, max_num_faces=1)
     disp = DisplayFace(draw3d=True)
-    file = '../data/mona.png'
+    file = '../data/sample/mona.png'
 elif mode=='hand':
     pipe = MediaPipeHand(static_image_mode=True, max_num_hands=1)
     disp = DisplayHand(draw3d=True, max_num_hands=1)
-    file = '../data/hand.png'
+    file = '../data/sample/hand.png'
 elif mode=='body':
     pipe = MediaPipeBody(static_image_mode=True, upper_body_only=True)
     disp = DisplayBody(draw3d=True, upper_body_only=True)
-    file = '../data/upper_limb4.png'
+    file = '../data/sample/upper_limb4.png'
 elif mode=='holistic':
     pipe = MediaPipeHolistic(static_image_mode=True, upper_body_only=False)
     disp = DisplayHolistic(draw3d=True, upper_body_only=False)
-    file = '../data/lower_limb4.png'
+    file = '../data/sample/lower_limb4.png'
 else:
     print('Undefined mode only the following modes are available: \nface / hand / body / holistic')
     sys.exit()
@@ -49,7 +49,7 @@ img  = cv2.imread(file)
 
 # # Preprocess image if necessary
 # img = cv2.resize(img, None, fx=0.5, fy=0.5)
-# img = cv2.flip(img, 1)
+img = cv2.flip(img, 1)
 # # Select ROI
 # r = cv2.selectROI(img)
 # # Crop image
