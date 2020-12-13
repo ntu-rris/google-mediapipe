@@ -62,9 +62,7 @@ conda activate mp
 | Single Image | Video Input | Gesture Recognition | Rock Paper Scissor Game |
 | ------------ | ----------- | ------------------- | ----------------------- |
 | ![](doc/00_image.gif) | <a href="http://www.youtube.com/watch?feature=player_embedded&v=rqFp-ZH5tpo" target="_blank"><img src="http://img.youtube.com/vi/rqFp-ZH5tpo/1.jpg" alt="IMAGE ALT TEXT HERE" width="320" height="180" border="0" /></a> | ![](doc/02_gesture.gif) | ![](doc/03_game_rps.gif) 
-| ---------------- | ----------------------------- | ------------------------ | --------- |
 | Measure Hand ROM | Measure Wrist and Forearm ROM | Face Mask | Triangulate 3D Body Pose |
-| ---------------- | ----------------------------- | ------------------------ | --------- |
 | ![](doc/04_hand_rom.gif) | ![](doc/05_wrist_rom.gif)| ![](doc/06_face_mask.gif) | ![](doc/07_triangulate.gif) |
 
 <!-- [![](https://img.youtube.com/vi/rqFp-ZH5tpo/1.jpg)](https://www.youtube.com/watch?v=rqFp-ZH5tpo) --> 
