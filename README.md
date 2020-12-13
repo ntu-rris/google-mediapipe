@@ -1,4 +1,4 @@
-# [Google MediaPipe](https://github.com/google/mediapipe)
+# [Google MediaPipe](https://github.com/google/mediapipe) for Pose Estimation
 
 [![](doc/rris_database.gif)](https://www.nature.com/articles/s41597-020-00627-7?sf237508323=1)
 
@@ -9,15 +9,15 @@ The main purpose of this repo is to:
 * Customize visualization of 2D & 3D outputs
 * Demo some simple applications with hand tracking 
 	* [Gesture recognition](code/02_gesture.py)
-	* [Game of rock paper scissor ](code/03_game_rps.py)
+	* [Rock paper scissor game](code/03_game_rps.py)
 	* [Measure hand range of motion](code/04_hand_rom.py)
-	* Articulate 3D hand mesh model
 * Demo some simple applications with body tracking
-	* 3D body pose with stereo vision
-	* Measure body range of motion
-	* Articulate 3D human mesh model
+	* [Measure wrist and forearm range of motion](code/05_wrist_rom.py)
+* Demo some simple applications with face tracking
+	* [Face mask](code/06_face_mask.py)
 
-## Pose Estimation from Color Image
+
+## Pose Estimation with Input Color Image
 Attractiveness of Google MediaPipe as compared to other SOTA (e.g. [CMU OpenPose](https://github.com/CMU-Perceptual-Computing-Lab/openpose), [DeepPoseKit](https://github.com/jgraving/DeepPoseKit), [DeepLabCut](https://github.com/DeepLabCut/DeepLabCut), [MinimalHand](https://github.com/CalciferZh/minimal-hand)):
 * **Fast**: Runs at almost realtime rate on CPU and even mobile devices
 * **Open-source**: Codes are freely available at [github](https://github.com/google/mediapipe) (except that [details of network models are not released](https://github.com/google/mediapipe/issues/155))
@@ -59,15 +59,18 @@ conda activate mp
 ## Demo Overview
 <!-- Link to create gif from images https://ezgif.com/maker -->
 
-| Single image | Video input | Gesture recognition | Rock paper scissor game | Measure hand ROM |
-| ------------ | ----------- | ------------------- | ----------------------- | ---------------- |
-| ![](doc/00_image.gif) | <a href="http://www.youtube.com/watch?feature=player_embedded&v=rqFp-ZH5tpo" target="_blank"><img src="http://img.youtube.com/vi/rqFp-ZH5tpo/1.jpg" alt="IMAGE ALT TEXT HERE" width="320" height="180" border="0" /></a> | ![](doc/02_gesture.gif) | ![](doc/03_game_rps.gif) | ![](doc/04_hand_rom.gif) |
-
+| Single Image | Video Input | Gesture Recognition | Rock Paper Scissor Game |
+| ------------ | ----------- | ------------------- | ----------------------- |
+| ![](doc/00_image.gif) | <a href="http://www.youtube.com/watch?feature=player_embedded&v=rqFp-ZH5tpo" target="_blank"><img src="http://img.youtube.com/vi/rqFp-ZH5tpo/1.jpg" alt="IMAGE ALT TEXT HERE" width="320" height="180" border="0" /></a> | ![](doc/02_gesture.gif) | ![](doc/03_game_rps.gif) 
+| ---------------- | ----------------------------- | ------------------------ | --------- |
+| Measure Hand ROM | Measure Wrist and Forearm ROM | Face Mask | Triangulate 3D Body Pose |
+| ---------------- | ----------------------------- | ------------------------ | --------- |
+| ![](doc/04_hand_rom.gif) | ![](doc/05_wrist_rom.gif)| ![](doc/06_face_mask.gif) | ![](doc/07_triangulate.gif) |
 
 <!-- [![](https://img.youtube.com/vi/rqFp-ZH5tpo/1.jpg)](https://www.youtube.com/watch?v=rqFp-ZH5tpo) --> 
 
 ## Usage
-### [0: Single Image](code/00_image.py):
+### [0. Single Image](code/00_image.py):
 
 4 different modes are available and sample images are located in [data/sample/](data/sample/) folder
 ```
@@ -79,7 +82,7 @@ python 00_image.py --mode holistic
 Note: The sample images for subject with body marker are adapted from [An Asian-centric human movement database capturing activities of daily living](https://www.nature.com/articles/s41597-020-00627-7?sf237508323=1) and the image of Mona Lisa is adapted from [Wiki](https://upload.wikimedia.org/wikipedia/commons/e/ec/Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg)
 
 
-### [1: Video Input](code/01_video.py):
+### [1. Video Input](code/01_video.py):
 
 4 different modes are available and video capture can be done online through [webcam](https://github.com/ntu-rris/google-mediapipe/blob/5e155130ba3477b84e873c57251c59f4206da3ee/code/01_video.py#L45) or offline from your own [.mp4 file](https://github.com/ntu-rris/google-mediapipe/blob/5e155130ba3477b84e873c57251c59f4206da3ee/code/01_video.py#L46)
 ```
@@ -92,7 +95,7 @@ python 01_video.py --mode holistic
 Note: It takes around 10 to 30 FPS on CPU, depending on the mode selected. The [video](https://www.youtube.com/watch?v=rqFp-ZH5tpo) demonstrating supported mini-squats is adapted from [National Stroke Association](https://www.youtube.com/watch?v=WLjOoQUgWs4)
 
 
-### [2: Gesture Recognition](code/02_gesture.py):
+### [2. Gesture Recognition](code/02_gesture.py):
 
 2 modes are available: Use evaluation mode to perform recognition of 11 gestures and use train mode to log your own training data
 ```
@@ -100,19 +103,44 @@ python 02_gesture.py --mode eval
 python 02_gesture.py --mode train
 ```
 
-### [3: Rock Paper Scissor Game](code/03_game_rps.py):
+### [3. Rock Paper Scissor Game](code/03_game_rps.py):
 
 Simple game of rock paper scissor requires a pair of hands facing the camera
 ```
 python 03_game_rps.py
 ```
 
-### [4: Measure Hand Range of Motion](code/04_hand_rom.py):
+### [4. Measure Hand Range of Motion](code/04_hand_rom.py):
 
 2 modes are available: Use evaluation mode to perform hand rom recognition and use train mode to log your own training data
 ```
 python 04_hand_rom.py --mode eval
 python 04_hand_rom.py --mode train
+```
+
+### [5. Measure Wrist and Forearm Range of Motion](code/05_wrist_rom.py):
+
+3 modes are available and user have to input the side of the hand to be measured
+* 0: Forearm pronation/supination
+* 1: Wrist flexion/extension
+* 2: Wrist radial/ulnar deviation
+
+```
+python 05_wrist_rom.py --mode 0 --side right
+python 05_wrist_rom.py --mode 1 --side right
+python 05_wrist_rom.py --mode 2 --side right
+python 05_wrist_rom.py --mode 0 --side left
+python 05_wrist_rom.py --mode 1 --side left
+python 05_wrist_rom.py --mode 2 --side left
+```
+
+Note: For measuring forearm pronation/supination, the camera has to be placed at the same level as the hand such that palmar side of the hand is directly facing camera. For measuring wrist rom, the camera has to be placed such that upper body of the subject is visible, refer to the [sample wrist images](data/sample) for examples. The wrist images are adapted from [Goni Wrist Flexion, Extension, Radial & Ulnar Deviation](https://www.youtube.com/watch?v=nIPaGkDh3dI) 
+
+### [6. Face Mask](code/06_face_mask.py):
+
+Overlay a 3D face mask on the detected face in image plane
+```
+python 06_face_mask.py
 ```
 
 ## Limitations:

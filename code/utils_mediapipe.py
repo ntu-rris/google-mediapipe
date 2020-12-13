@@ -355,7 +355,7 @@ class MediaPipeHolistic:
                 'keypt'   : np.zeros((21,2)), # 2D keypt in image coordinate (pixel)
                 'joint'   : np.zeros((21,3)), # 3D joint in relative coordinate
                 'joint_3d': np.zeros((21,3)), # 3D joint in absolute coordinate (m)
-                'class'   : None, # Left / right hand
+                'class'   : None, # Left / none hand
                 'score'   : 0, # Probability of predicted handedness (always>0.5, and opposite handedness=1-score)
                 'angle'   : np.zeros(15), # Joint angles
                 'gesture' : None, # Type of hand gesture
@@ -365,7 +365,7 @@ class MediaPipeHolistic:
                 'keypt'   : np.zeros((21,2)), # 2D keypt in image coordinate (pixel)
                 'joint'   : np.zeros((21,3)), # 3D joint in relative coordinate
                 'joint_3d': np.zeros((21,3)), # 3D joint in absolute coordinate (m)
-                'class'   : None, # Left / right hand
+                'class'   : None, # None / right hand
                 'score'   : 0, # Probability of predicted handedness (always>0.5, and opposite handedness=1-score)
                 'angle'   : np.zeros(15), # Joint angles
                 'gesture' : None, # Type of hand gesture

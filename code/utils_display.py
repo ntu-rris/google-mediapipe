@@ -27,11 +27,12 @@ class DisplayFace:
 
             # Draw face mesh
             # .obj file adapted from https://github.com/google/mediapipe/tree/master/mediapipe/modules/face_geometry/data
-            self.mesh = o3d.io.read_triangle_mesh('../data/canonical_face_model.obj')
+            # self.mesh = o3d.io.read_triangle_mesh('../data/canonical_face_model.obj') # Seems like Open3D ver 0.11.2 have some issue with reading .obj https://github.com/intel-isl/Open3D/issues/2614
+            self.mesh = o3d.io.read_triangle_mesh('../data/canonical_face_model.ply')
             self.mesh.paint_uniform_color([255/255, 172/255, 150/255]) # Skin color
             self.mesh.compute_vertex_normals()
             self.mesh.scale(0.01, np.array([0,0,0]))
-            
+
             # Draw world reference frame
             frame = o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.5)
 
@@ -129,6 +130,108 @@ class DisplayFace:
                 self.mesh.vertices = o3d.utility.Vector3dVector(param[i]['joint'])
             else:
                 self.mesh.vertices = o3d.utility.Vector3dVector(np.zeros((self.nPt,3)))
+
+
+class DisplayFaceMask:
+    def __init__(self, img, draw3d=False, max_num_faces=1):
+        # Note: This class is specially created for demo 07_face_mask.py
+        super(DisplayFaceMask, self).__init__()
+        self.max_num_faces = max_num_faces
+        self.nPt = 468 # Define number of keypoints/joints
+
+        ############################
+        ### Open3D visualization ###
+        ############################
+        self.vis = o3d.visualization.Visualizer()
+        self.vis.create_window(width=img.shape[1], height=img.shape[0])
+        self.vis.get_render_option().point_size = 3.0
+        joint = np.zeros((self.nPt,3))
+
+        # Draw face mesh
+        # .obj file adapted from https://github.com/google/mediapipe/tree/master/mediapipe/modules/face_geometry/data
+        # self.mesh = o3d.io.read_triangle_mesh('../data/canonical_face_model.obj') # Seems like Open3D ver 0.11.2 have some issue with reading .obj https://github.com/intel-isl/Open3D/issues/2614
+        self.mesh = o3d.io.read_triangle_mesh('../data/canonical_face_model.ply')        
+        self.mesh.paint_uniform_color([255/255, 172/255, 150/255]) # Skin color
+        self.mesh.compute_vertex_normals()
+        self.mesh.scale(0.01, [0,0,0])
+
+        # Draw 2D image plane in 3D space
+        self.mesh_img = self.create_mesh_img(img)
+
+        # Draw world reference frame
+        frame = o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.5)
+
+        # Add geometry to visualize
+        self.vis.add_geometry(frame)
+        self.vis.add_geometry(self.mesh)
+        self.vis.add_geometry(self.mesh_img)
+
+        # Set camera view
+        ctr = self.vis.get_view_control()
+        ctr.set_up([0,-1,0]) # Set up as -y axis
+        ctr.set_front([0,0,-1]) # Set to looking towards -z axis
+        ctr.set_lookat([0.5,0.5*img.shape[0]/img.shape[1],0]) # Set to center of view
+        ctr.set_zoom(0.6)  
+
+
+    def create_mesh_img(self, img):
+        h, w, _ = img.shape
+
+        mesh = o3d.geometry.TriangleMesh()
+        # Convention of 4 vertices
+        # --> right x
+        # Down y
+        # Vertex 0 (-x,-y) -- Vertex 1 (x,-y)
+        # Vertex 3 (-x,y)  -- Vertex 2 (x,y)
+        mesh.vertices = o3d.utility.Vector3dVector(
+            [[-w,-h,0],[w,-h,0],
+             [w,h,0],[-w,h,0]])
+        # Anti-clockwise direction (4 triangles to allow two-sided views)
+        mesh.triangles = o3d.utility.Vector3iVector(
+            [[0,2,1],[0,3,2],  # Front face
+             [0,1,2],[0,2,3]]) # Back face
+        # Define the uvs to match img coor to the order of triangles
+        # Top left    (0,0) -- Top right    (1,0)
+        # Bottom left (0,1) -- Bottom right (1,1)
+        mesh.triangle_uvs = o3d.utility.Vector2dVector(
+            [[0,0],[1,1],[1,0], [0,0],[0,1],[1,1], # Front face
+             [0,0],[1,0],[1,1], [0,0],[1,1],[0,1]]) # Back face
+        # Image to be displayed
+        mesh.textures = [o3d.geometry.Image(img)]
+
+        num_face = np.asarray(mesh.triangles).shape[0]
+        mesh.triangle_material_ids = o3d.utility.IntVector(
+            np.zeros(num_face, dtype=np.int32))
+
+        mesh.translate([w,h,0]) # Shift origin of image to top left corner
+        mesh.scale(1/(2*w), [0,0,0]) # Scale down such image width = 1 unit in 3D space
+
+        return mesh        
+
+
+    def draw3d(self, param, img):
+        for i in range(self.max_num_faces):
+            if param[i]['detect']:
+                param[i]['joint'][:,1] *= img.shape[0]/img.shape[1] # To match for scaling of mesh image
+                param[i]['joint'][:,2] -= 0.05 # Shift face mask slightly forward
+                self.mesh.vertices = o3d.utility.Vector3dVector(param[i]['joint'])
+            else:
+                self.mesh.vertices = o3d.utility.Vector3dVector(np.zeros((self.nPt,3)))
+
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        self.mesh_img.textures = [o3d.geometry.Image(img)]
+        
+        self.vis.update_geometry(None)
+        self.vis.poll_events()
+        self.vis.update_renderer()
+
+        # # Capture screen image
+        # img = self.vis.capture_screen_float_buffer()
+        # # Convert to OpenCV format
+        # img = (np.asarray(img)*255).astype(np.uint8)
+        # img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+
+        # return img
 
 
 class DisplayHand:
@@ -248,19 +351,19 @@ class DisplayHand:
                         # # Label visibility and presence
                         # cv2.putText(img, '%.1f, %.1f' % (p['visible'][i], p['presence'][i]),
                         #     (x, y), cv2.FONT_HERSHEY_SIMPLEX, 1, self.color[i])
+                
+		# Label gesture
+                if p['gesture'] is not None:
+                    size = cv2.getTextSize(p['gesture'].upper(), 
+                        # cv2.FONT_HERSHEY_SIMPLEX, 2, 2)[0]
+                        cv2.FONT_HERSHEY_SIMPLEX, 1, 2)[0]
+                    x = int((img_width-size[0]) / 2)
+                    cv2.putText(img, p['gesture'].upper(),
+                        # (x, 50), cv2.FONT_HERSHEY_SIMPLEX, 2, (0,0,255), 2)
+                        (x, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 2)
 
-                        # Label gesture
-                        if p['gesture'] is not None:
-                            size = cv2.getTextSize(p['gesture'].upper(), 
-                                # cv2.FONT_HERSHEY_SIMPLEX, 2, 2)[0]
-                                cv2.FONT_HERSHEY_SIMPLEX, 1, 2)[0]
-                            x = int((img_width-size[0]) / 2)
-                            cv2.putText(img, p['gesture'].upper(),
-                                # (x, 50), cv2.FONT_HERSHEY_SIMPLEX, 2, (0,0,255), 2)
-                                (x, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 2)
-
-                            # Label joint angle
-                            self.draw_joint_angle(img, p)
+                    # Label joint angle
+                    self.draw_joint_angle(img, p)
 
             # Label fps
             if p['fps']>0:
@@ -370,6 +473,13 @@ class DisplayHand:
             # Dist btw thumb and little fingertip
             dist = np.linalg.norm(p['joint'][4] - p['joint'][20])
             text = 'Dist: %.3f' % dist
+        
+        elif p['gesture']=='Forearm Neutral' or \
+             p['gesture']=='Forearm Pronation' or \
+             p['gesture']=='Forearm Supination' or \
+             p['gesture']=='Wrist Flex/Extension' or \
+             p['gesture']=='Wrist Radial/Ulnar Dev':
+            text = 'Angle: %.1f' % p['angle'][0]
 
         if text is not None:
             x0 = 10 # Starting x coor for placing text
@@ -644,15 +754,18 @@ class DisplayBody:
 
 
 class DisplayHolistic:
-    def __init__(self, draw3d=False, upper_body_only=True):
+    def __init__(self, draw3d=False, upper_body_only=True, vis=None):
 
         ############################
         ### Open3D visualization ###
         ############################
-        if draw3d:        
-            self.vis = o3d.visualization.Visualizer()
-            self.vis.create_window(width=640, height=480)
-            self.vis.get_render_option().point_size = 8.0
+        if draw3d:     
+            if vis is not None:
+                self.vis = vis
+            else:
+                self.vis = o3d.visualization.Visualizer()
+                self.vis.create_window(width=640, height=480)
+                self.vis.get_render_option().point_size = 8.0
 
             self.disp_face = DisplayFace(draw3d=draw3d, vis=self.vis)
             self.disp_hand = DisplayHand(draw3d=draw3d, vis=self.vis,
