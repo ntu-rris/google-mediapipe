@@ -63,8 +63,8 @@ conda activate mp
 | ------------ | ----------- | ------------------- | ----------------------- |
 | ![](doc/00_image.gif) | <a href="http://www.youtube.com/watch?feature=player_embedded&v=rqFp-ZH5tpo" target="_blank"><img src="http://img.youtube.com/vi/rqFp-ZH5tpo/1.jpg" alt="IMAGE ALT TEXT HERE" width="320" height="180" border="0" /></a> | ![](doc/02_gesture.gif) | ![](doc/03_game_rps.gif) 
 
-| Measure Hand ROM | Measure Wrist and Forearm ROM | Face Mask | Triangulate 3D Body Pose |
-| ---------------- | ----------------------------- | ------------------------ | --------- |
+| Measure Hand ROM | Measure Wrist and Forearm ROM | Face Mask | Triangulate Points for 3D Pose |
+| ---------------- | ----------------------------- | --------- | ------------------------------ |
 | ![](doc/04_hand_rom.gif) | ![](doc/05_wrist_rom.gif)| ![](doc/06_face_mask.gif) | ![](doc/07_triangulate.gif) |
 
 <!-- [![](https://img.youtube.com/vi/rqFp-ZH5tpo/1.jpg)](https://www.youtube.com/watch?v=rqFp-ZH5tpo) --> 
@@ -112,7 +112,7 @@ python 03_game_rps.py
 
 ### [4. Measure Hand Range of Motion](code/04_hand_rom.py):
 
-2 modes are available: Use evaluation mode to perform hand rom recognition and use train mode to log your own training data
+2 modes are available: Use evaluation mode to perform hand ROM recognition and use train mode to log your own training data
 ```
 python 04_hand_rom.py --mode eval
 python 04_hand_rom.py --mode train
@@ -134,7 +134,7 @@ python 05_wrist_rom.py --mode 1 --side left
 python 05_wrist_rom.py --mode 2 --side left
 ```
 
-Note: For measuring forearm pronation/supination, the camera has to be placed at the same level as the hand such that palmar side of the hand is directly facing camera. For measuring wrist ROM, the camera has to be placed such that upper body of the subject is visible, refer to [sample wrist images](data/sample) for examples. The wrist images are adapted from [Goni Wrist Flexion, Extension, Radial & Ulnar Deviation](https://www.youtube.com/watch?v=nIPaGkDh3dI) 
+Note: For measuring forearm pronation/supination, the camera has to be placed at the same level as the hand such that palmar side of the hand is directly facing camera. For measuring wrist ROM, the camera has to be placed such that upper body of the subject is visible, refer to examples of wrist_XXX.png images in [data/sample/](data/sample/) folder. The wrist images are adapted from [Goni Wrist Flexion, Extension, Radial & Ulnar Deviation](https://www.youtube.com/watch?v=nIPaGkDh3dI) 
 
 ### [6. Face Mask](code/06_face_mask.py):
 
@@ -144,6 +144,23 @@ python 06_face_mask.py
 ```
 Note: The face image is adapted from [MediaPipe 3D Face Transform](https://developers.googleblog.com/2020/09/mediapipe-3d-face-transform.html)
 
+
+### [7. Triangulate Points](code/07_triangulate.py):
+
+Estimating 3D body pose from a single 2D image is an ill-posed problem and extremely challenging.
+One way to reconstruct 3D body pose is to make use of multiview setup and perform triangulation.
+For offline testing, use [CMU Panoptic Dataset](http://domedb.perception.cs.cmu.edu/171204_pose1.html), follow the instructions on [PanopticStudio Toolbox](https://github.com/CMU-Perceptual-Computing-Lab/panoptic-toolbox) to download a sample dataset 171204_pose1_sample into data/ folder
+```
+python 07_triangulate.py --mode body --use_panoptic_dataset
+```
+
+<!-- For online testing, make sure camera intrinsics and extrinsics parameters are available, if not refer to [utils_3d_reconstruction.py](code/utils_3d_reconstruction.py) for more details
+```
+python 07_triangulate.py --mode hand
+python 07_triangulate.py --mode body
+python 07_triangulate.py --mode holistic
+``` -->
+
 ## Limitations:
-Estimating 3D hand pose from a single 2D image is an ill-posed problem and extremely challenging, thus the resulting hand ROM may not be accurate!
+Estimating 3D pose from a single 2D image is an ill-posed problem and extremely challenging, thus the measurement of ROM may not be accurate!
 Please refer to the respective model cards for more details on other types of limitations such as lighting, motion blur, occlusions, image resolution, etc.
