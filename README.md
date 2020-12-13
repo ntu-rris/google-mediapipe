@@ -30,19 +30,19 @@ Latest [MediaPipe Python API version 0.8.1](https://pypi.org/project/mediapipe/)
 
 **Face Mesh** (468 **3D** face landmarks)
 
-[**Blog**](https://ai.googleblog.com/2019/03/real-time-ar-self-expression-with.html) | [**Code**](https://google.github.io/mediapipe/solutions/face_mesh) | [**Paper**](https://arxiv.org/abs/1907.06724) |  [**Video**](https://www.youtube.com/watch?v=JNSXC3E0-s4) | [**Model Card**](https://drive.google.com/file/d/1QvwWNfFoweGVjsXF3DXzcrCnz-mx-Lha/view)
+* [**Blog**](https://ai.googleblog.com/2019/03/real-time-ar-self-expression-with.html) | [**Code**](https://google.github.io/mediapipe/solutions/face_mesh) | [**Paper**](https://arxiv.org/abs/1907.06724) |  [**Video**](https://www.youtube.com/watch?v=JNSXC3E0-s4) | [**Model Card**](https://drive.google.com/file/d/1QvwWNfFoweGVjsXF3DXzcrCnz-mx-Lha/view)
 
 **Hands** (21 **3D** landmarks and able to support multiple hands)
 
-[**Blog**](https://ai.googleblog.com/2019/08/on-device-real-time-hand-tracking-with.html) | [**Code**](https://google.github.io/mediapipe/solutions/hands) | [**Paper**](https://arxiv.org/abs/2006.10214) |  [**Video**](https://www.youtube.com/watch?v=I-UOrvxxXEk) | [**Model Card**](https://drive.google.com/file/d/1yiPfkhb4hSbXJZaSq9vDmhz24XVZmxpL/view)
+* [**Blog**](https://ai.googleblog.com/2019/08/on-device-real-time-hand-tracking-with.html) | [**Code**](https://google.github.io/mediapipe/solutions/hands) | [**Paper**](https://arxiv.org/abs/2006.10214) |  [**Video**](https://www.youtube.com/watch?v=I-UOrvxxXEk) | [**Model Card**](https://drive.google.com/file/d/1yiPfkhb4hSbXJZaSq9vDmhz24XVZmxpL/view)
 
 **Body Pose** (33 **2D** landmarks for whole body / 25 **2D** landmarks for upper-body)
 
-[**Blog**](https://ai.googleblog.com/2020/08/on-device-real-time-body-pose-tracking.html) | [**Code**](https://google.github.io/mediapipe/solutions/pose) | [**Paper**](https://arxiv.org/abs/2006.10204) |  [**Video**](https://www.youtube.com/watch?v=YPpUOTRn5tA&feature=emb_logo) | [**Model Card**](https://drive.google.com/file/d/1zhYyUXhQrb_Gp0lKUFv1ADT3OCxGEQHS/view)
+* [**Blog**](https://ai.googleblog.com/2020/08/on-device-real-time-body-pose-tracking.html) | [**Code**](https://google.github.io/mediapipe/solutions/pose) | [**Paper**](https://arxiv.org/abs/2006.10204) |  [**Video**](https://www.youtube.com/watch?v=YPpUOTRn5tA&feature=emb_logo) | [**Model Card**](https://drive.google.com/file/d/1zhYyUXhQrb_Gp0lKUFv1ADT3OCxGEQHS/view)
 
 **Holistic (Face + Hands + Body)** (A total of 543/535 landmarks: 468 face + 2 x 21 hands + 33/25 pose)
 
-[**Blog**](https://ai.googleblog.com/2020/12/mediapipe-holistic-simultaneous-face.html) | [**Code**](https://google.github.io/mediapipe/solutions/holistic#smooth_landmarks)
+* [**Blog**](https://ai.googleblog.com/2020/12/mediapipe-holistic-simultaneous-face.html) | [**Code**](https://google.github.io/mediapipe/solutions/holistic#smooth_landmarks)
 
 Note: The above videos are presented at [CVPR 2020 Fourth Workshop on Computer Vision for AR/VR](https://xr.cornell.edu/workshop/2020/papers), interested reader can refer to the link for other related works.
 
@@ -120,7 +120,7 @@ python 04_hand_rom.py --mode train
 
 ### [5. Measure Wrist and Forearm Range of Motion](code/05_wrist_rom.py):
 
-3 modes are available and user have to input the side of the hand to be measured
+3 modes are available and user has to input the side of the hand to be measured
 * 0: Forearm pronation/supination
 * 1: Wrist flexion/extension
 * 2: Wrist radial/ulnar deviation
@@ -134,7 +134,7 @@ python 05_wrist_rom.py --mode 1 --side left
 python 05_wrist_rom.py --mode 2 --side left
 ```
 
-Note: For measuring forearm pronation/supination, the camera has to be placed at the same level as the hand such that palmar side of the hand is directly facing camera. For measuring wrist rom, the camera has to be placed such that upper body of the subject is visible, refer to the [sample wrist images](data/sample) for examples. The wrist images are adapted from [Goni Wrist Flexion, Extension, Radial & Ulnar Deviation](https://www.youtube.com/watch?v=nIPaGkDh3dI) 
+Note: For measuring forearm pronation/supination, the camera has to be placed at the same level as the hand such that palmar side of the hand is directly facing camera. For measuring wrist ROM, the camera has to be placed such that upper body of the subject is visible, refer to [sample wrist images](data/sample) for examples. The wrist images are adapted from [Goni Wrist Flexion, Extension, Radial & Ulnar Deviation](https://www.youtube.com/watch?v=nIPaGkDh3dI) 
 
 ### [6. Face Mask](code/06_face_mask.py):
 
@@ -142,6 +142,7 @@ Overlay a 3D face mask on the detected face in image plane
 ```
 python 06_face_mask.py
 ```
+Note: The face image is adapted from [MediaPipe 3D Face Transform](https://developers.googleblog.com/2020/09/mediapipe-3d-face-transform.html)
 
 ## Limitations:
 Estimating 3D hand pose from a single 2D image is an ill-posed problem and extremely challenging, thus the resulting hand ROM may not be accurate!
