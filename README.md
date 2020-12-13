@@ -70,7 +70,7 @@ conda activate mp
 <!-- [![](https://img.youtube.com/vi/rqFp-ZH5tpo/1.jpg)](https://www.youtube.com/watch?v=rqFp-ZH5tpo) --> 
 
 ## Usage
-### [0. Single Image](code/00_image.py):
+### [0. Single Image](code/00_image.py)
 
 4 different modes are available and sample images are located in [data/sample/](data/sample/) folder
 ```
@@ -82,7 +82,7 @@ python 00_image.py --mode holistic
 Note: The sample images for subject with body marker are adapted from [An Asian-centric human movement database capturing activities of daily living](https://www.nature.com/articles/s41597-020-00627-7?sf237508323=1) and the image of Mona Lisa is adapted from [Wiki](https://upload.wikimedia.org/wikipedia/commons/e/ec/Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg)
 
 
-### [1. Video Input](code/01_video.py):
+### [1. Video Input](code/01_video.py)
 
 4 different modes are available and video capture can be done online through [webcam](https://github.com/ntu-rris/google-mediapipe/blob/5e155130ba3477b84e873c57251c59f4206da3ee/code/01_video.py#L45) or offline from your own [.mp4 file](https://github.com/ntu-rris/google-mediapipe/blob/5e155130ba3477b84e873c57251c59f4206da3ee/code/01_video.py#L46)
 ```
@@ -95,7 +95,7 @@ python 01_video.py --mode holistic
 Note: It takes around 10 to 30 FPS on CPU, depending on the mode selected. The [video](https://www.youtube.com/watch?v=rqFp-ZH5tpo) demonstrating supported mini-squats is adapted from [National Stroke Association](https://www.youtube.com/watch?v=WLjOoQUgWs4)
 
 
-### [2. Gesture Recognition](code/02_gesture.py):
+### [2. Gesture Recognition](code/02_gesture.py)
 
 2 modes are available: Use evaluation mode to perform recognition of 11 gestures and use train mode to log your own training data
 ```
@@ -103,14 +103,14 @@ python 02_gesture.py --mode eval
 python 02_gesture.py --mode train
 ```
 
-### [3. Rock Paper Scissor Game](code/03_game_rps.py):
+### [3. Rock Paper Scissor Game](code/03_game_rps.py)
 
 Simple game of rock paper scissor requires a pair of hands facing the camera
 ```
 python 03_game_rps.py
 ```
 
-### [4. Measure Hand Range of Motion](code/04_hand_rom.py):
+### [4. Measure Hand Range of Motion](code/04_hand_rom.py)
 
 2 modes are available: Use evaluation mode to perform hand ROM recognition and use train mode to log your own training data
 ```
@@ -118,12 +118,12 @@ python 04_hand_rom.py --mode eval
 python 04_hand_rom.py --mode train
 ```
 
-### [5. Measure Wrist and Forearm Range of Motion](code/05_wrist_rom.py):
+### [5. Measure Wrist and Forearm Range of Motion](code/05_wrist_rom.py)
 
 3 modes are available and user has to input the side of the hand to be measured
-* 0: Forearm pronation/supination
-* 1: Wrist flexion/extension
-* 2: Wrist radial/ulnar deviation
+* 0: Wrist flexion/extension
+* 1: Wrist radial/ulnar deviation
+* 2: Forearm pronation/supination
 
 ```
 python 05_wrist_rom.py --mode 0 --side right
@@ -136,7 +136,7 @@ python 05_wrist_rom.py --mode 2 --side left
 
 Note: For measuring forearm pronation/supination, the camera has to be placed at the same level as the hand such that palmar side of the hand is directly facing camera. For measuring wrist ROM, the camera has to be placed such that upper body of the subject is visible, refer to examples of wrist_XXX.png images in [data/sample/](data/sample/) folder. The wrist images are adapted from [Goni Wrist Flexion, Extension, Radial & Ulnar Deviation](https://www.youtube.com/watch?v=nIPaGkDh3dI) 
 
-### [6. Face Mask](code/06_face_mask.py):
+### [6. Face Mask](code/06_face_mask.py)
 
 Overlay a 3D face mask on the detected face in image plane
 ```
@@ -145,7 +145,7 @@ python 06_face_mask.py
 Note: The face image is adapted from [MediaPipe 3D Face Transform](https://developers.googleblog.com/2020/09/mediapipe-3d-face-transform.html)
 
 
-### [7. Triangulate Points](code/07_triangulate.py):
+### [7. Triangulate Points](code/07_triangulate.py)
 
 Estimating 3D body pose from a single 2D image is an ill-posed problem and extremely challenging.
 One way to reconstruct 3D body pose is to make use of multiview setup and perform triangulation.
