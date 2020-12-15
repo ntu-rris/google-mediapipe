@@ -30,8 +30,17 @@ mode = args.mode
 # cam_idx = [4,10] # Note: Hardcoded for my setup
 # Read from .mp4 file
 if args.use_panoptic_dataset:
+    # Test with 2 views
     cam_idx = ['../data/171204_pose1_sample/hdVideos/hd_00_00.mp4',
                '../data/171204_pose1_sample/hdVideos/hd_00_11.mp4']
+
+    # # Test with n views
+    # num_views = 5 # Note: Maximum 31 hd cameras but processing time will be extremely slow
+    # cam_idx = []
+    # for i in range(num_views):
+    #     cam_idx.append(
+    #         '../data/171204_pose1_sample/hdVideos/hd_00_'+str(i).zfill(2)+'.mp4')
+
 # Start video capture
 cap = [cv2.VideoCapture(cam_idx[i]) for i in range(len(cam_idx))] 
 
@@ -48,7 +57,7 @@ vis.create_window(width=640, height=480)
 vis.get_render_option().point_size = 5.0
 
 # Load triangulation class
-tri = Triangulation(cam_idx=[0,11], vis=vis, 
+tri = Triangulation(cam_idx=cam_idx, vis=vis, 
     use_panoptic_dataset=args.use_panoptic_dataset)
 
 # Load mediapipe and display class
@@ -101,7 +110,11 @@ while True:
         prev_time[i] = curr_time
 
     # Perform triangulation
-    param = tri.triangulate_2views(param, mode)
+    if args.use_panoptic_dataset:
+        if len(cam_idx)==2:
+            param = tri.triangulate_2views(param, mode)
+        else:
+            param = tri.triangulate_nviews(param, mode)
     
     for i in range(len(cam_idx)):
         # Display 2D keypoint
@@ -118,6 +131,8 @@ while True:
     key = cv2.waitKey(1)
     if key==27:
         break
+
+# vis.run() # Keep 3D display for visualization
 
 for p, c in zip(pipe, cap):
     p.pipe.close()

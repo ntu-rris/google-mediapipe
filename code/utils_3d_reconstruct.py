@@ -432,10 +432,19 @@ class Triangulation:
                 cam['R'] = np.matrix(cam['R'])
                 cam['t'] = np.array(cam['t'])*0.01 # Convert cm to m
 
+            # Extract camera index integer from video file name
+            cam_idx_ = []
+            for c in cam_idx:
+                # Example of file name
+                # ../data/171204_pose1_sample/hdVideos/hd_00_00.mp4
+                value = c.split('_')[-1] # Select the last split (XX.mp4)
+                value = value.split('.')[0] # Select the first split (XX)
+                cam_idx_.append(int(value))
+            
             # Compute projection matrix
             self.pmat = []
-            for i in range(len(cam_idx)):
-                cam = cameras[(0,cam_idx[i])]
+            for i in range(len(cam_idx_)):
+                cam = cameras[(0,cam_idx_[i])]
                 extrin_mat = np.zeros((3,4))
                 extrin_mat[:3,:3] = cam['R']
                 extrin_mat[:3,3:] = cam['t']
@@ -451,35 +460,125 @@ class Triangulation:
             # Draw camera axis
             hd_cam_idx = zip([0] * 30,range(0,30)) # Choose only HD cameras
             hd_cameras = [cameras[cam].copy() for cam in hd_cam_idx]
-            for cam in hd_cameras:
-                extrin_mat = np.eye(4)
-                extrin_mat[:3,:3] = cam['R']
-                extrin_mat[:3,3:] = cam['t']
-                axis = o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.2)
-                axis.transform(np.linalg.inv(extrin_mat))
-                vis.add_geometry(axis)
+            for i, cam in enumerate(hd_cameras):
+                if i in cam_idx_: # Show only those selected camera
+                    extrin_mat = np.eye(4)
+                    extrin_mat[:3,:3] = cam['R']
+                    extrin_mat[:3,3:] = cam['t']
+                    axis = o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.2)
+                    axis.transform(np.linalg.inv(extrin_mat))
+                    vis.add_geometry(axis)
 
 
     def triangulate_2views(self, param, mode):
 
         if mode=='body':
-            p0 = param[0]['keypt']
-            p1 = param[1]['keypt']
+            p0 = param[0]['keypt'] # [nPt,2]
+            p1 = param[1]['keypt'] # [nPt,2]
 
-        # Use OpenCV to triangulate from two views
+        elif mode=='holistic':
+            _, param_lh, param_rh, param_bd = param[0]
+            p0 = np.vstack((param_lh['keypt'], 
+                            param_rh['keypt'],
+                            param_bd['keypt'])) # [21+21+33/25,2]
+            
+            _, param_lh, param_rh, param_bd = param[1]
+            p1 = np.vstack((param_lh['keypt'], 
+                            param_rh['keypt'],
+                            param_bd['keypt'])) # [21+21+33/25,2]
+
+
+        # Note: OpenCV can only triangulate from 2 views
         p3d = cv2.triangulatePoints(
             self.pmat[0], self.pmat[1],
             p0.T, p1.T) # Note: triangulatePoints requires 2xN arrays, so transpose
         
         # However, homgeneous point is returned so need to divide by last term
-        p3d /= p3d[3]
+        p3d /= p3d[3] # [4,nPt]
+        p3d = p3d[:3,:].T # [nPt,3]
 
         # Update param 3D joint
         if mode=='body':
-            param[0]['joint'] = p3d[:3,:].T
-            param[1]['joint'] = p3d[:3,:].T
+            param[0]['joint'] = p3d # [nPt,3]
+            param[1]['joint'] = p3d # [nPt,3]
+
+        elif mode=='holistic':
+            _, param_lh, param_rh, param_bd = param[0]
+            param_lh['joint'] = p3d[  :21]
+            param_rh['joint'] = p3d[21:42]
+            param_bd['joint'] = p3d[42:]
+
+            _, param_lh, param_rh, param_bd = param[1]
+            param_lh['joint'] = p3d[  :21]
+            param_rh['joint'] = p3d[21:42]
+            param_bd['joint'] = p3d[42:]
 
         return param
+
+
+    def triangulate_nviews(self, param, mode):
+
+        p2d = [] # List of len nCam to store [nPt,2] for each view
+        if mode=='body':
+            for p in param:
+                p2d.append(p['keypt']) # [nPt,2]
+
+        elif mode=='holistic':
+            for p in param:
+                _, param_lh, param_rh, param_bd = p
+                p2d.append(np.vstack((
+                            param_lh['keypt'], 
+                            param_rh['keypt'],
+                            param_bd['keypt'])) # [21+21+33/25,2]
+                           )
+
+        # Convert list into a single array
+        p2d = np.concatenate(p2d, axis=1) # [nPt,2*nCam]
+        nPt = p2d.shape[0]
+
+        p3d = np.zeros((nPt,3))
+        for i in range(nPt):
+            p3d[i,:] = self.triangulate_point(p2d[i,:].reshape(-1,2))
+
+        # Update param 3D joint
+        if mode=='body':
+            for p in param:
+                p['joint'] = p3d # [nPt,3]
+
+        elif mode=='holistic':
+            for p in param:
+                _, param_lh, param_rh, param_bd = p
+                param_lh['joint'] = p3d[  :21]
+                param_rh['joint'] = p3d[21:42]
+                param_bd['joint'] = p3d[42:]
+
+        return param
+
+
+    def triangulate_point(self, point):
+        # Modified from 
+        # https://gist.github.com/davegreenwood/e1d2227d08e24cc4e353d95d0c18c914
+
+        # Other possible python implementation
+        # https://www.mail-archive.com/floatcanvas@mithis.com/msg00513.html
+
+        # Also its worthwhile to read through the below link
+        # http://kwon3d.com/theory/dlt/dlt.html 
+        # For indepth explanation on DLT and many other useful theories
+        # required by multicam mocap by Prof Young-Hoo Kwon
+
+        # Use DLT to triangulate a 3D point from N image points in N camera views
+        N = len(self.pmat) # Number of camera views
+        M = np.zeros((3*N, 4+N))
+        for i in range(N):
+            M[3*i:3*i+3, :4] = self.pmat[i] # [3,4]
+            M[3*i:3*i+2,4+i] = -point[i] # [2,1]
+            M[3*i+2    ,4+i] = -1  # Homogeneous coordinate
+        V = np.linalg.svd(M)[-1] # [4+N,4+N]
+        X = V[-1,:4] # [4]
+        X = X / X[3] # [4]
+
+        return X[:3] # [3]
 
 
 class PanopticDataset:
