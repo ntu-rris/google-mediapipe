@@ -109,6 +109,8 @@ Simple game of rock paper scissor requires a pair of hands facing the camera
 ```
 python 03_game_rps.py
 ```
+For another game of flappy bird refer to this [github](https://github.com/limgm/flappy-mediapipe)
+
 
 ### [4. Measure Hand Range of Motion](code/04_hand_rom.py)
 
