@@ -1,5 +1,6 @@
 ###############################################################################
-### Useful function for visualization of face, hand and body pose estimation
+### Useful function for visualization of 
+### face, hand, body, holistic and object pose estimation
 ###############################################################################
 
 import cv2
@@ -7,11 +8,27 @@ import numpy as np
 import open3d as o3d
 
 
+# Define default camera intrinsic
+img_width  = 640
+img_height = 480
+intrin_default = {
+    'fx': img_width*0.9, # Approx 0.7w < f < w https://www.learnopencv.com/approximate-focal-length-for-webcams-and-cell-phone-cameras/
+    'fy': img_width*0.9,
+    'cx': img_width*0.5, # Approx center of image
+    'cy': img_height*0.5,
+    'width': img_width,
+    'height': img_height,
+}
+
+
 class DisplayFace:
-    def __init__(self, draw3d=False, max_num_faces=1, vis=None):
-        super(DisplayFace, self).__init__()
+    def __init__(self, draw3d=False, intrin=None, max_num_faces=1, vis=None):
         self.max_num_faces = max_num_faces
         self.nPt = 468 # Define number of keypoints/joints
+        if intrin is None:
+            self.intrin = intrin_default
+        else:
+            self.intrin = intrin        
 
         ############################
         ### Open3D visualization ###
@@ -21,7 +38,8 @@ class DisplayFace:
                 self.vis = vis
             else:
                 self.vis = o3d.visualization.Visualizer()
-                self.vis.create_window(width=640, height=480)
+                self.vis.create_window(
+                    width=self.intrin['width'], height=self.intrin['height'])
                 self.vis.get_render_option().point_size = 3.0
             joint = np.zeros((self.nPt,3))
 
@@ -132,10 +150,19 @@ class DisplayFace:
                 self.mesh.vertices = o3d.utility.Vector3dVector(np.zeros((self.nPt,3)))
 
 
+    def draw3d_(self, param):
+        # Different from draw3d
+        # draw3d_ draw the actual 3d joint in camera coordinate
+        for i in range(self.max_num_faces):
+            if param[i]['detect']:
+                self.mesh.vertices = o3d.utility.Vector3dVector(param[i]['joint_3d'])
+            else:
+                self.mesh.vertices = o3d.utility.Vector3dVector(np.zeros((self.nPt,3)))
+
+
 class DisplayFaceMask:
     def __init__(self, img, draw3d=False, max_num_faces=1):
         # Note: This class is specially created for demo 07_face_mask.py
-        super(DisplayFaceMask, self).__init__()
         self.max_num_faces = max_num_faces
         self.nPt = 468 # Define number of keypoints/joints
 
@@ -235,9 +262,12 @@ class DisplayFaceMask:
 
 
 class DisplayHand:
-    def __init__(self, draw3d=False, max_num_hands=1, vis=None):
-        super(DisplayHand, self).__init__()
+    def __init__(self, draw3d=False, draw_camera=False, intrin=None, max_num_hands=1, vis=None):
         self.max_num_hands = max_num_hands
+        if intrin is None:
+            self.intrin = intrin_default
+        else:
+            self.intrin = intrin
 
         # Define kinematic tree linking keypoint together to form skeleton
         self.ktree = [0,          # Wrist
@@ -268,8 +298,9 @@ class DisplayHand:
                 self.vis = vis
             else:
                 self.vis = o3d.visualization.Visualizer()
-                self.vis.create_window(width=640, height=480)
-                self.vis.get_render_option().point_size = 8.0
+                self.vis.create_window(
+                    width=self.intrin['width'], height=self.intrin['height'])
+            self.vis.get_render_option().point_size = 8.0
             joint = np.zeros((21,3))
 
             # Draw 21 joints
@@ -309,10 +340,23 @@ class DisplayHand:
             ctr.set_front([0,0,-1]) # Set to looking towards -z axis
             ctr.set_lookat([0.5,0.5,0]) # Set to center of view
             ctr.set_zoom(1)
-            # ctr.set_up([0,-1,0]) # Set up as -y axis
-            # ctr.set_front([1,0,0]) # Set to looking towards x axis
-            # ctr.set_lookat([0,0,0.5]) # Set to center of view
-            # ctr.set_zoom(0.5)
+            
+            if draw_camera:
+                # Remove previous frame
+                self.vis.remove_geometry(frame)
+                # Draw camera reference frame
+                frame = o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.05)
+                # Draw camera frustum
+                self.camera = DisplayCamera(self.vis, self.intrin)
+                frustum = self.camera.create_camera_frustum()
+                # Draw 2D image plane in 3D space
+                self.mesh_img = self.camera.create_mesh_img()
+                # Add geometry to visualize
+                self.vis.add_geometry(frame)
+                self.vis.add_geometry(frustum)
+                self.vis.add_geometry(self.mesh_img)
+                # Reset camera view
+                self.camera.reset_view()
 
 
     def draw2d(self, img, param):
@@ -352,7 +396,7 @@ class DisplayHand:
                         # cv2.putText(img, '%.1f, %.1f' % (p['visible'][i], p['presence'][i]),
                         #     (x, y), cv2.FONT_HERSHEY_SIMPLEX, 1, self.color[i])
                 
-		# Label gesture
+		        # Label gesture
                 if p['gesture'] is not None:
                     size = cv2.getTextSize(p['gesture'].upper(), 
                         # cv2.FONT_HERSHEY_SIMPLEX, 2, 2)[0]
@@ -431,6 +475,22 @@ class DisplayHand:
             else:
                 self.pcd[i].points = o3d.utility.Vector3dVector(param[i]['joint'])
                 self.bone[i].points = o3d.utility.Vector3dVector(param[i]['joint'])
+
+
+    def draw3d_(self, param, img=None):
+        # Different from draw3d
+        # draw3d_ draw the actual 3d joint in camera coordinate
+        for i in range(self.max_num_hands):
+            if param[i]['class'] is None:
+                self.pcd[i].points = o3d.utility.Vector3dVector(np.zeros((21,3)))
+                self.bone[i].points = o3d.utility.Vector3dVector(np.zeros((21,3)))
+            else:
+                self.pcd[i].points = o3d.utility.Vector3dVector(param[i]['joint_3d'])
+                self.bone[i].points = o3d.utility.Vector3dVector(param[i]['joint_3d'])
+
+        if img is not None:
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            self.mesh_img.textures = [o3d.geometry.Image(img)]            
 
 
     def draw_joint_angle(self, img, p):
@@ -577,8 +637,11 @@ class DisplayHand:
 
 
 class DisplayBody:
-    def __init__(self, draw3d=False, upper_body_only=True, vis=None):
-        super(DisplayBody, self).__init__()
+    def __init__(self, draw3d=False, draw_camera=False, intrin=None, upper_body_only=True, vis=None):
+        if intrin is None:
+            self.intrin = intrin_default
+        else:
+            self.intrin = intrin  
 
         # Define kinematic tree linking 33 keypoint together to form skeleton
         self.ktree = [
@@ -624,7 +687,8 @@ class DisplayBody:
                 self.vis = vis
             else:
                 self.vis = o3d.visualization.Visualizer()
-                self.vis.create_window(width=640, height=480)
+                self.vis.create_window(
+                    width=self.intrin['width'], height=self.intrin['height'])
                 self.vis.get_render_option().point_size = 8.0
             joint = np.zeros((self.num_landmark,3))
 
@@ -664,6 +728,18 @@ class DisplayBody:
             ctr.set_front([0,0,-1]) # Set to looking towards -z axis
             ctr.set_lookat([0.5,0.5,0]) # Set to center of view
             ctr.set_zoom(1)
+
+            if draw_camera:
+                # Draw camera frustum
+                self.camera = DisplayCamera(self.vis, self.intrin)
+                frustum = self.camera.create_camera_frustum(depth=[1,2])
+                # Draw 2D image plane in 3D space
+                self.mesh_img = self.camera.create_mesh_img(depth=2)
+                # Add geometry to visualize
+                self.vis.add_geometry(frustum)
+                self.vis.add_geometry(self.mesh_img)
+                # Reset camera view
+                self.camera.reset_view()
 
 
     def draw2d(self, img, param):
@@ -753,8 +829,29 @@ class DisplayBody:
             self.bone.points = o3d.utility.Vector3dVector(np.zeros((self.num_landmark,3)))
 
 
+    def draw3d_(self, param, img=None):
+        # Different from draw3d
+        # draw3d_ draw the actual 3d joint in camera coordinate
+        if param['detect']:
+            # Translate all joint_3d forward by 1 m
+            param['joint_3d'][:,2] += 1.0             
+            self.pcd.points = o3d.utility.Vector3dVector(param['joint_3d'])
+            self.bone.points = o3d.utility.Vector3dVector(param['joint_3d'])
+        else:
+            self.pcd.points = o3d.utility.Vector3dVector(np.zeros((self.num_landmark,3)))
+            self.bone.points = o3d.utility.Vector3dVector(np.zeros((self.num_landmark,3)))
+
+        if img is not None:
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            self.mesh_img.textures = [o3d.geometry.Image(img)]
+
+
 class DisplayHolistic:
-    def __init__(self, draw3d=False, upper_body_only=True, vis=None):
+    def __init__(self, draw3d=False, draw_camera=False, intrin=None, upper_body_only=True, vis=None):
+        if intrin is None:
+            self.intrin = intrin_default
+        else:
+            self.intrin = intrin
 
         ############################
         ### Open3D visualization ###
@@ -764,18 +861,33 @@ class DisplayHolistic:
                 self.vis = vis
             else:
                 self.vis = o3d.visualization.Visualizer()
-                self.vis.create_window(width=640, height=480)
+                self.vis.create_window(
+                    width=self.intrin['width'], height=self.intrin['height'])
                 self.vis.get_render_option().point_size = 8.0
 
-            self.disp_face = DisplayFace(draw3d=draw3d, vis=self.vis)
-            self.disp_hand = DisplayHand(draw3d=draw3d, vis=self.vis,
+            self.disp_face = DisplayFace(draw3d=True, vis=self.vis, intrin=self.intrin)
+            self.disp_hand = DisplayHand(draw3d=True, vis=self.vis, intrin=self.intrin,
                 max_num_hands=2)
-            self.disp_body = DisplayBody(draw3d=draw3d, vis=self.vis,
+            self.disp_body = DisplayBody(draw3d=True, vis=self.vis, intrin=self.intrin,
                 upper_body_only=upper_body_only)
+
+            if draw_camera:
+                # Draw camera frustum
+                self.camera = DisplayCamera(self.vis, self.intrin)
+                frustum = self.camera.create_camera_frustum(depth=[1,2])
+                # Draw 2D image plane in 3D space
+                self.mesh_img = self.camera.create_mesh_img(depth=2)
+                # Add geometry to visualize
+                self.vis.add_geometry(frustum)
+                self.vis.add_geometry(self.mesh_img)
+                # Reset camera view
+                self.camera.reset_view()
+
         else:
-            self.disp_face = DisplayFace(draw3d=draw3d)
-            self.disp_hand = DisplayHand(draw3d=draw3d, max_num_hands=2)
-            self.disp_body = DisplayBody(draw3d=draw3d, upper_body_only=upper_body_only)
+            self.disp_face = DisplayFace(draw3d=False)
+            self.disp_hand = DisplayHand(draw3d=False, max_num_hands=2)
+            self.disp_body = DisplayBody(draw3d=False, 
+                upper_body_only=upper_body_only, draw_camera=False)
 
 
     def draw2d(self, img, param):
@@ -801,6 +913,255 @@ class DisplayHolistic:
         self.disp_face.draw3d([param_fc])
         self.disp_hand.draw3d([param_lh, param_rh])
         self.disp_body.draw3d(param_bd)
+
+
+    def draw3d_(self, param, img):
+        # Different from draw3d
+        # draw3d_ draw the actual 3d joint in camera coordinate
+        param_fc, param_lh, param_rh, param_bd = param
+        # Note: Collapse body hand joint as there is full hand joint from hand
+        param_bd['joint_3d'][[17,19,21]] = param_bd['joint_3d'][15]
+        param_bd['joint_3d'][[18,20,22]] = param_bd['joint_3d'][16]
+        # Note: Collapse body face joint as there is full face mesh
+        param_bd['joint_3d'][[0,1,2,3,4,5,6,7,8,9,10]] = np.zeros(3)
+        # Translate all joint_3d forward by 1 m
+        param_fc['joint_3d'][:,2] += 1.0 
+        param_lh['joint_3d'][:,2] += 1.0 
+        param_rh['joint_3d'][:,2] += 1.0 
+        # param_bd['joint_3d'][:,2] += 1.0 
+        self.disp_face.draw3d_([param_fc])
+        self.disp_hand.draw3d_([param_lh, param_rh])
+        self.disp_body.draw3d_(param_bd)
+
+        if img is not None:
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            self.mesh_img.textures = [o3d.geometry.Image(img)]
+
+
+class DisplayCamera:
+    def __init__(self, vis, intrin=None):
+        self.vis = vis
+        
+        # Get camera intrinsics param
+        if intrin is None:
+            self.intrin = intrin_default
+        else:
+            self.intrin = intrin            
+        
+        # Note: Need to subtract optical center by 0.5
+        # https://github.com/intel-isl/Open3D/issues/727
+        self.intrin['cx'] -= 0.5
+        self.intrin['cy'] -= 0.5
+
+        # For reset_view
+        self.pinhole = o3d.camera.PinholeCameraParameters()
+        self.pinhole.extrinsic = np.eye(4)
+        self.pinhole.intrinsic = o3d.camera.PinholeCameraIntrinsic(
+            self.intrin['width'], self.intrin['height'], 
+            self.intrin['fx'], self.intrin['fy'], 
+            self.intrin['cx'], self.intrin['cy'])            
+
+
+    def reset_view(self):
+        # Reset camera view to this camera
+        self.vis.get_view_control().convert_from_pinhole_camera_parameters(
+            self.pinhole)
+
+
+    def unproject_pt(self, u, v, depth):
+        # Transform 2D pixels to 3D points
+        # Given pixel coordinates and depth in an image
+        # with no distortion or inverse distortion coefficients
+        # compute the corresponding point in 3D space relative to the same camera
+        x = (u - self.intrin['cx'])/self.intrin['fx']*depth
+        y = (v - self.intrin['cy'])/self.intrin['fy']*depth
+        z = depth
+
+        return [x, y, z]
+
+
+    def create_camera_frustum(self, depth=[0.5,1.0]):
+        # Get camera intrinsics param
+        w  = self.intrin['width']
+        h  = self.intrin['height']
+
+        # Each frustum 8 lines, each line 2 pts, and plot at 2 different depths
+        points, lines = [], []
+        c = 0 # Counter
+        points.append([0,0,0]) # Origin
+        for d in depth: # Plot at different depth
+            points.append(self.unproject_pt(0, 0, d)) # Top left
+            points.append(self.unproject_pt(w, 0, d)) # Top right
+            points.append(self.unproject_pt(w, h, d)) # Bottom left
+            points.append(self.unproject_pt(0, h, d)) # Bottom right
+            lines.append([0,c+1]);   lines.append([0,c+2])
+            lines.append([0,c+3]);   lines.append([0,c+4])
+            lines.append([c+1,c+2]); lines.append([c+2,c+3])
+            lines.append([c+3,c+4]); lines.append([c+4,c+1])
+            c += 4
+            
+        # Set to uniform light gray color
+        colors = [[0.75,0.75,0.75] for i in range(len(lines))]
+
+        line = o3d.geometry.LineSet()
+        line.lines  = o3d.utility.Vector2iVector(lines)
+        line.points = o3d.utility.Vector3dVector(points)
+        line.colors = o3d.utility.Vector3dVector(colors)
+
+        return line
+
+
+    def create_mesh_img(self, img=None, depth=1.0):
+        # Get camera intrinsics param
+        w  = self.intrin['width']
+        h  = self.intrin['height']
+
+        if img is None:
+            img = np.zeros((h, w, 3), dtype=np.uint8)
+
+        vert = []
+        vert.append(self.unproject_pt( 0, 0, depth)) # Top left
+        vert.append(self.unproject_pt( w, 0, depth)) # Top right
+        vert.append(self.unproject_pt( w, h, depth)) # Bottom left
+        vert.append(self.unproject_pt( 0, h, depth)) # Bottom right
+
+        mesh = o3d.geometry.TriangleMesh()
+        # Convention of 4 vertices
+        # --> right x
+        # Down y
+        # Vertex 0 (-x,-y) -- Vertex 1 (x,-y)
+        # Vertex 3 (-x,y)  -- Vertex 2 (x,y)
+        mesh.vertices = o3d.utility.Vector3dVector(vert)
+        # Anti-clockwise direction (4 triangles to allow two-sided views)
+        mesh.triangles = o3d.utility.Vector3iVector(
+            [[0,2,1],[0,3,2],  # Front face
+             [0,1,2],[0,2,3]]) # Back face
+        # Define the uvs to match img coor to the order of triangles
+        # Top left    (0,0) -- Top right    (1,0)
+        # Bottom left (0,1) -- Bottom right (1,1)
+        mesh.triangle_uvs = o3d.utility.Vector2dVector(
+            [[0,0],[1,1],[1,0], [0,0],[0,1],[1,1], # Front face
+             [0,0],[1,0],[1,1], [0,0],[1,1],[0,1]]) # Back face
+        # Image to be displayed
+        mesh.textures = [o3d.geometry.Image(img)]
+
+        num_face = np.asarray(mesh.triangles).shape[0]
+        mesh.triangle_material_ids = o3d.utility.IntVector(
+            np.zeros(num_face, dtype=np.int32))
+
+        return mesh
+
+
+class DisplayObjectron:
+    def __init__(self, draw3d=False, draw_camera=False, intrin=None, max_num_objects=1, vis=None):
+        self.max_num_objects = max_num_objects
+        if intrin is None:
+            self.intrin = intrin_default
+        else:
+            self.intrin = intrin        
+
+        ############################
+        ### Open3D visualization ###
+        ############################
+        if draw3d:
+            if vis is not None:
+                self.vis = vis
+            else:
+                self.vis = o3d.visualization.Visualizer()
+                self.vis.create_window(
+                    width=self.intrin['width'], height=self.intrin['height'])
+                self.vis.get_render_option().point_size = 3.0
+
+            point = np.zeros((9,3))
+            color = [[1,0,0],[0,1,0],[0,0,1],[1,0,1],[0,1,1]] # Note: Max 5 colors RGB
+            self.box  = []
+            self.axis = []
+            for i in range(max_num_objects):
+                # Draw bounding box
+                b = o3d.geometry.LineSet()
+                b.points = o3d.utility.Vector3dVector(point)
+                b.lines  = o3d.utility.Vector2iVector(    
+                    [(1, 2), (1, 3), (1, 5), (2, 4),
+                     (2, 6), (3, 4), (3, 7), (4, 8),
+                     (5, 6), (5, 7), (6, 8), (7, 8)])
+                b.paint_uniform_color(color[i])
+                self.box.append(b)
+                
+                # Draw object frame
+                a = o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.1)
+                self.axis.append(a)
+
+            # Add geometry to visualize
+            for b in self.box:
+                self.vis.add_geometry(b)
+            for a in self.axis:
+                self.vis.add_geometry(a)
+
+            if draw_camera:
+                # Draw camera reference frame
+                frame = o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.1)
+                # Draw camera frustum
+                self.camera = DisplayCamera(self.vis, self.intrin)
+                frustum = self.camera.create_camera_frustum()
+                # Draw 2D image plane in 3D space
+                self.mesh_img = self.camera.create_mesh_img()
+                # Add geometry to visualize
+                self.vis.add_geometry(frame)
+                self.vis.add_geometry(frustum)
+                self.vis.add_geometry(self.mesh_img)
+                # Reset camera view
+                self.camera.reset_view()                
+
+
+    def draw2d(self, img, param):
+        img_height, img_width, _ = img.shape
+
+        # Loop through different objects
+        color = [[0,0,255],[0,255,0],[255,0,0],[255,0,255],[255,255,0]] # Note: Max 5 colors BGR
+        for j, p in enumerate(param):
+            if p['detect']:
+                # Draw bounding box
+                for connect in BOX_CONNECTIONS:
+                    x = int(p['landmarks_2d'][connect[0],0])
+                    y = int(p['landmarks_2d'][connect[0],1])
+                    x_= int(p['landmarks_2d'][connect[1],0])
+                    y_= int(p['landmarks_2d'][connect[1],1])
+                    if x_>0 and y_>0 and x_<img_width and y_<img_height and \
+                       x >0 and y >0 and x <img_width and y <img_height:
+                        cv2.line(img, (x_, y_), (x, y), color[j], 1)
+
+                # Draw center of object
+                x = int(p['landmarks_2d'][0,0])
+                y = int(p['landmarks_2d'][0,1])
+                if x>0 and y>0 and x<img_width and y<img_height:
+                    cv2.circle(img, (x, y), 2, (0,255,255), -1)
+                    cv2.line(img, (x-5, y), (x+5, y), (0,255,255), 2)
+                    cv2.line(img, (x, y-5), (x, y+5), (0,255,255), 2)
+
+                # Loop through 2d landmarks
+                for i in range(1,9):
+                    x = int(p['landmarks_2d'][i,0])
+                    y = int(p['landmarks_2d'][i,1])
+                    if x>0 and y>0 and x<img_width and y<img_height:
+                        cv2.circle(img, (x, y), 4, color[j], -1)
+
+                # Draw projected axis
+
+
+            # Label fps
+            if p['fps']>0:
+                cv2.putText(img, 'FPS: %.1f' % (p['fps']),
+                    (0, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 2)   
+
+        return img
+
+
+    def draw3d(self, param):
+        for i, b in enumerate(self.box):
+            if param[i]['detect']:
+                b.points = o3d.utility.Vector3dVector(param[i]['landmarks_3d'])
+            else:
+                b.points = o3d.utility.Vector3dVector(np.zeros((9,3)))
 
 
 # Adapted from https://github.com/google/mediapipe/blob/master/mediapipe/python/solutions/face_mesh.py
@@ -936,3 +1297,19 @@ FACE_CONNECTIONS = frozenset([
     (67, 109),
     (109, 10)
 ])  
+
+# Adapted from https://github.com/google/mediapipe/blob/350fbb2100ad531bc110b93aaea23d96af5a5064/mediapipe/python/solutions/objectron.py
+BOX_CONNECTIONS = frozenset([
+    (1, 2),
+    (1, 3),
+    (1, 5),
+    (2, 4),
+    (2, 6),
+    (3, 4),
+    (3, 7),
+    (4, 8),
+    (5, 6),
+    (5, 7),
+    (6, 8),
+    (7, 8),
+])

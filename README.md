@@ -7,14 +7,7 @@
 The main purpose of this repo is to:
 * Customize output of MediaPipe solutions
 * Customize visualization of 2D & 3D outputs
-* Demo some simple applications with hand tracking 
-	* [Gesture recognition](code/02_gesture.py)
-	* [Rock paper scissor game](code/03_game_rps.py)
-	* [Measure hand range of motion](code/04_hand_rom.py)
-* Demo some simple applications with body tracking
-	* [Measure wrist and forearm range of motion](code/05_wrist_rom.py)
-* Demo some simple applications with face tracking
-	* [Face mask](code/06_face_mask.py)
+* Demo some simple applications (refer to [Demo Overview](#demo-overview))
 
 
 ## Pose Estimation with Input Color Image
@@ -26,7 +19,7 @@ Attractiveness of Google MediaPipe as compared to other SOTA (e.g. [CMU OpenPose
 * **ML Solutions**: Apart from face, hand and body pose estimations, MediaPipe offers an array of machine learning applications refer to their [github](https://github.com/google/mediapipe) for more details
 
 ## Features
-Latest [MediaPipe Python API version 0.8.1](https://pypi.org/project/mediapipe/) (Released 10 Dec 2020) features:
+Latest [MediaPipe Python API version 0.8.3](https://pypi.org/project/mediapipe/) (Released 28 Feb 2021) features:
 
 **Face Mesh** (468 **3D** face landmarks)
 
@@ -36,13 +29,17 @@ Latest [MediaPipe Python API version 0.8.1](https://pypi.org/project/mediapipe/)
 
 * [**Blog**](https://ai.googleblog.com/2019/08/on-device-real-time-hand-tracking-with.html) | [**Code**](https://google.github.io/mediapipe/solutions/hands) | [**Paper**](https://arxiv.org/abs/2006.10214) |  [**Video**](https://www.youtube.com/watch?v=I-UOrvxxXEk) | [**Model Card**](https://drive.google.com/file/d/1yiPfkhb4hSbXJZaSq9vDmhz24XVZmxpL/view)
 
-**Body Pose** (33 **2D** landmarks for whole body / 25 **2D** landmarks for upper-body)
+**Body Pose** (33 **3D (NEW)** landmarks for whole body / 25 **2D** landmarks for upper-body)
 
 * [**Blog**](https://ai.googleblog.com/2020/08/on-device-real-time-body-pose-tracking.html) | [**Code**](https://google.github.io/mediapipe/solutions/pose) | [**Paper**](https://arxiv.org/abs/2006.10204) |  [**Video**](https://www.youtube.com/watch?v=YPpUOTRn5tA&feature=emb_logo) | [**Model Card**](https://drive.google.com/file/d/1zhYyUXhQrb_Gp0lKUFv1ADT3OCxGEQHS/view)
 
 **Holistic (Face + Hands + Body)** (A total of 543/535 landmarks: 468 face + 2 x 21 hands + 33/25 pose)
 
 * [**Blog**](https://ai.googleblog.com/2020/12/mediapipe-holistic-simultaneous-face.html) | [**Code**](https://google.github.io/mediapipe/solutions/holistic#smooth_landmarks)
+
+**Objectron (3D object detection and tracking (NEW))** (4 possible objects: Shoe / Chair / Camera / Cup)
+
+* [**Blog**](https://ai.googleblog.com/2020/03/real-time-3d-object-detection-on-mobile.html) | [**Code**](https://google.github.io/mediapipe/solutions/objectron) | [**Paper**](https://arxiv.org/abs/2003.03522) | [**Paper**](https://drive.google.com/file/d/1O_zHmlgXIzAdKljp20U_JUkEHOGG52R8/view) | [**Model Card**](https://drive.google.com/file/d/1CMhN7Npdq0Dt2j0_z69mai2-m7oUTRKF/view)
 
 Note: The above videos are presented at [CVPR 2020 Fourth Workshop on Computer Vision for AR/VR](https://xr.cornell.edu/workshop/2020/papers), interested reader can refer to the link for other related works.
 
@@ -66,6 +63,10 @@ conda activate mp
 | Measure Hand ROM | Measure Wrist and Forearm ROM | Face Mask | Triangulate Points for 3D Pose |
 | ---------------- | ----------------------------- | --------- | ------------------------------ |
 | ![](doc/04_hand_rom.gif) | ![](doc/05_wrist_rom.gif)| ![](doc/06_face_mask.gif) | ![](doc/07_triangulate.gif) |
+
+| 3D Skeleton | Detect Object |
+| ----------- | ------------- |
+| ![](doc/08_skeleton_3D.gif) | ![](doc/09_objectron.gif)|
 
 <!-- [![](https://img.youtube.com/vi/rqFp-ZH5tpo/1.jpg)](https://www.youtube.com/watch?v=rqFp-ZH5tpo) --> 
 
@@ -102,6 +103,9 @@ Note: It takes around 10 to 30 FPS on CPU, depending on the mode selected. The [
 python 02_gesture.py --mode eval
 python 02_gesture.py --mode train
 ```
+
+Note: A simple but effective K-nearest neighbor (KNN) algorithm is used as the classifier. For the hand gesture recognition demo, since 3D hand joints are available, we can compute flexion joint angles (feature vector) and use it to classify different hand poses. On the other hand, if 3D body joints are not yet reliable, the normalized pairwise distances between predifined lists of joints as described in [MediaPipe Pose Classification](https://google.github.io/mediapipe/solutions/pose_classification.html) could also be used as the feature vector for KNN.
+
 
 ### [3. Rock Paper Scissor Game](code/03_game_rps.py)
 
@@ -162,6 +166,16 @@ python 07_triangulate.py --mode hand
 python 07_triangulate.py --mode body
 python 07_triangulate.py --mode holistic
 ``` -->
+
+### [8. 3D Skeleton](code/08_skeleton_3D.py)
+
+This demo will display the estimated 3D skeleton of the hand and/or body. 3 different modes are available and video capture can be done online through [webcam](https://github.com/ntu-rris/google-mediapipe/blob/5e155130ba3477b84e873c57251c59f4206da3ee/code/01_video.py#L45) or offline from your own [.mp4 file](https://github.com/ntu-rris/google-mediapipe/blob/5e155130ba3477b84e873c57251c59f4206da3ee/code/01_video.py#L46)
+
+```
+python 08_skeleton_3D.py --mode hand
+python 08_skeleton_3D.py --mode body
+python 08_skeleton_3D.py --mode holistic
+```
 
 ## Limitations:
 Estimating 3D pose from a single 2D image is an ill-posed problem and extremely challenging, thus the measurement of ROM may not be accurate!
