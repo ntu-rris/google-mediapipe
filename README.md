@@ -15,8 +15,8 @@ Attractiveness of Google MediaPipe as compared to other SOTA (e.g. [CMU OpenPose
 * **Fast**: Runs at almost realtime rate on CPU and even mobile devices
 * **Open-source**: Codes are freely available at [github](https://github.com/google/mediapipe) (except that [details of network models are not released](https://github.com/google/mediapipe/issues/155))
 * **User-friendly**: For python API just `pip install mediapipe` will work (but C++ API is much more troublesome to [build and use](https://google.github.io/mediapipe/getting_started/cpp))
-* **Cross-platform**: Works across Android, iOS, desktop and [web](https://developers.googleblog.com/2020/01/mediapipe-on-web.html) (Note: this repo only focuses on using Python API for desktop usage)
-* **ML Solutions**: Apart from face, hand and body pose estimations, MediaPipe offers an array of machine learning applications refer to their [github](https://github.com/google/mediapipe) for more details
+* **Cross-platform**: Works across Android, iOS, desktop, [JavaScript](https://google.github.io/mediapipe/getting_started/javascript.html) and [web](https://developers.googleblog.com/2020/01/mediapipe-on-web.html) (Note: this repo only focuses on using Python API for desktop usage)
+* **ML Solutions**: Apart from face, hand, body and object pose estimations, MediaPipe offers an array of machine learning applications refer to their [github](https://github.com/google/mediapipe) for more details
 
 ## Features
 Latest [MediaPipe Python API version 0.8.3](https://pypi.org/project/mediapipe/) (Released 28 Feb 2021) features:
@@ -64,8 +64,8 @@ conda activate mp
 | ---------------- | ----------------------------- | --------- | ------------------------------ |
 | ![](doc/04_hand_rom.gif) | ![](doc/05_wrist_rom.gif)| ![](doc/06_face_mask.gif) | ![](doc/07_triangulate.gif) |
 
-| 3D Skeleton | Detect Object |
-| ----------- | ------------- |
+| 3D Skeleton | 3D Object Detection |
+| ----------- | ------------------- |
 | ![](doc/08_skeleton_3D.gif) | ![](doc/09_objectron.gif)|
 
 <!-- [![](https://img.youtube.com/vi/rqFp-ZH5tpo/1.jpg)](https://www.youtube.com/watch?v=rqFp-ZH5tpo) --> 
@@ -169,12 +169,24 @@ python 07_triangulate.py --mode holistic
 
 ### [8. 3D Skeleton](code/08_skeleton_3D.py)
 
-This demo will display the estimated 3D skeleton of the hand and/or body. 3 different modes are available and video capture can be done online through [webcam](https://github.com/ntu-rris/google-mediapipe/blob/5e155130ba3477b84e873c57251c59f4206da3ee/code/01_video.py#L45) or offline from your own [.mp4 file](https://github.com/ntu-rris/google-mediapipe/blob/5e155130ba3477b84e873c57251c59f4206da3ee/code/01_video.py#L46)
+3D pose estimation is available in full-body mode and this demo displays the estimated 3D skeleton of the hand and/or body. 3 different modes are available and video capture can be done online through [webcam](https://github.com/ntu-rris/google-mediapipe/blob/990a4a73c969450f6414940af5a832c7820f5c01/code/08_skeleton_3D.py#L24) or offline from your own [.mp4 file](https://github.com/ntu-rris/google-mediapipe/blob/990a4a73c969450f6414940af5a832c7820f5c01/code/08_skeleton_3D.py#L25)
 
 ```
 python 08_skeleton_3D.py --mode hand
 python 08_skeleton_3D.py --mode body
 python 08_skeleton_3D.py --mode holistic
+```
+
+
+### [9. 3D Object Detection](code/09_objectron.py)
+
+4 different modes are available and a sample image is located in [data/sample/](data/sample/) folder. Currently supports 4 classes: Shoe / Chair / Cup / Camera.
+
+```
+python 09_objectron.py --mode shoe
+python 09_objectron.py --mode chair
+python 09_objectron.py --mode cup
+python 09_objectron.py --mode camera
 ```
 
 ## Limitations:
