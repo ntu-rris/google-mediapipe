@@ -1058,7 +1058,13 @@ class DisplayObjectron:
         if intrin is None:
             self.intrin = intrin_default
         else:
-            self.intrin = intrin        
+            self.intrin = intrin
+
+        # For drawing projected axis on 2D image
+        self.intrin_mat = np.asarray([
+            [self.intrin['fx'], 0, self.intrin['cx']],
+            [0, self.intrin['fy'], self.intrin['cy']],
+            [0, 0, 1]])      
 
         ############################
         ### Open3D visualization ###
@@ -1086,7 +1092,7 @@ class DisplayObjectron:
                      (5, 6), (5, 7), (6, 8), (7, 8)])
                 b.paint_uniform_color(color[i])
                 self.box.append(b)
-                
+
                 # Draw object frame
                 a = o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.1)
                 self.axis.append(a)
@@ -1138,7 +1144,7 @@ class DisplayObjectron:
                     cv2.line(img, (x-5, y), (x+5, y), (0,255,255), 2)
                     cv2.line(img, (x, y-5), (x, y+5), (0,255,255), 2)
 
-                # Loop through 2d landmarks
+                # Draw 2d landmarks
                 for i in range(1,9):
                     x = int(p['landmarks_2d'][i,0])
                     y = int(p['landmarks_2d'][i,1])
@@ -1146,7 +1152,17 @@ class DisplayObjectron:
                         cv2.circle(img, (x, y), 4, color[j], -1)
 
                 # Draw projected axis
-
+                axis_3D = np.float32([[0,0,0],[1,0,0],[0,1,0],[0,0,1]]) * 0.05 # Create a 3D axis with length of 5 cm
+                rvec = cv2.Rodrigues(p['rotation'])[0]
+                tvec = p['translation']
+                mat  = self.intrin_mat
+                dist = np.zeros(4) # Distortion coeff
+                axis_2D = cv2.projectPoints(axis_3D, rvec, tvec, mat, dist)[0].reshape(-1, 2)
+                if axis_2D.shape[0]==4:
+                    color = [(0,0,255),(0,255,0),(255,0,0)] # BGR
+                    for i in range(1,4):
+                        (x0, y0), (x1, y1) = axis_2D[0], axis_2D[i]
+                        cv2.line(img, (int(x0), int(y0)), (int(x1), int(y1)), color[i-1], 2)                 
 
             # Label fps
             if p['fps']>0:
@@ -1156,12 +1172,21 @@ class DisplayObjectron:
         return img
 
 
-    def draw3d(self, param):
+    def draw3d(self, param, img=None):
         for i, b in enumerate(self.box):
             if param[i]['detect']:
                 b.points = o3d.utility.Vector3dVector(param[i]['landmarks_3d'])
             else:
                 b.points = o3d.utility.Vector3dVector(np.zeros((9,3)))
+
+        for i, a in enumerate(self.axis):
+            if param[i]['detect']:
+                a.rotate(param[i]['rotation'], center=(0,0,0))
+                a.translate(param[i]['translation'])
+
+        if img is not None:
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            self.mesh_img.textures = [o3d.geometry.Image(img)]                  
 
 
 # Adapted from https://github.com/google/mediapipe/blob/master/mediapipe/python/solutions/face_mesh.py

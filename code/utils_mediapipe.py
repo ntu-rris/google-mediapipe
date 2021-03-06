@@ -698,7 +698,7 @@ class MediaPipeHolistic:
 
 
 class MediaPipeObjectron:
-    def __init__(self, static_image_mode=True, max_num_objects=5, model_name='Shoe'):
+    def __init__(self, static_image_mode=True, max_num_objects=5, model_name='Shoe', intrin=None):
         self.max_num_objects = max_num_objects
 
         # Access MediaPipe Solutions Python API
@@ -730,15 +730,23 @@ class MediaPipeObjectron:
         #   Currently supports the below 4 classes:
         #   Shoe / Chair / Cup / Camera
 
-        self.pipe = mp_obj.Objectron(
-            static_image_mode=static_image_mode,
-            max_num_objects=max_num_objects,
-            min_detection_confidence=0.5,
-            min_tracking_confidence=0.99,
-            # focal_length=(fx,fy),
-            # principal_point=(px,py),
-            # image_size=(width,height),
-            model_name=model_name)
+        if intrin is None:
+            self.pipe = mp_obj.Objectron(
+                static_image_mode=static_image_mode,
+                max_num_objects=max_num_objects,
+                min_detection_confidence=0.5,
+                min_tracking_confidence=0.99,
+                model_name=model_name.capitalize())
+        else:
+            self.pipe = mp_obj.Objectron(
+                static_image_mode=static_image_mode,
+                max_num_objects=max_num_objects,
+                min_detection_confidence=0.5,
+                min_tracking_confidence=0.99,
+                principal_point=(intrin['cx'],intrin['cy']),
+                focal_length=(intrin['fx'],intrin['fy']),
+                image_size=(intrin['width'],intrin['height']),
+                model_name=model_name.capitalize())
 
         # Define face parameter
         self.param = []
@@ -746,13 +754,23 @@ class MediaPipeObjectron:
             p = {
                 'detect'      : False,           # Boolean to indicate whether a face is detected
                 'landmarks_2d': np.zeros((9,2)), # 2D landmarks of object's 3D bounding box in image coordinate (pixel) Note: first value is center of bounding box, remaining 8 values are corners of bounding box
-                'landmarks_3d': np.zeros((9,3)), # 3D landmarks of object's 3D bounding box in camera coordinate
+                'landmarks_3d': np.zeros((9,3)), # 3D landmarks of object's 3D bounding box in camera coordinate Note: first value is center of bounding box, remaining 8 values are corners of bounding box
                 'rotation'    : np.eye(3),       # Rotation matrix from object coordinate frame to camera coordinate frame
                 'translation' : np.zeros(3),     # Translation vector from object coordinate frame to camera coordinate frame
                 'scale'       : np.zeros(3),     # Relative scale of the object along x, y and z directions
                 'fps'         : -1,              # Frame per sec
             }
             self.param.append(p)
+
+        # Change fr objectron to Open3D camera coor
+        # Objectron camera coor:
+        # +x pointing right, +y pointing up and +z pointing away from the scene
+        # Open3D camera coor:
+        # +x pointing right, +y pointing down and +z pointing to the scene
+        # Thus, only need to reflect y and z axis        
+        self.coc = np.eye(3) # Change of coor 3 by 3 matrix
+        self.coc[1,1] = -1 # y axis
+        self.coc[2,2] = -1 # z axis
 
 
     def result_to_param(self, result, img):
@@ -778,9 +796,32 @@ class MediaPipeObjectron:
                     self.param[i]['landmarks_3d'][j,1] = lm.y
                     self.param[i]['landmarks_3d'][j,2] = lm.z
 
-                self.param[i]['rotation']     = res.rotation
-                self.param[i]['translation']  = res.translation
-                self.param[i]['scale']        = res.scale
+                self.param[i]['scale']       = res.scale
+                self.param[i]['rotation']    = res.rotation
+                self.param[i]['translation'] = res.translation
+
+                # # Just to check computation of landmarks_3d_ = rotation * scale * unit_box + translation
+                # # Define a origin centered unit box with scale
+                # d = 0.5
+                # unit_box = np.array([ 
+                #     [ 0, 0, 0], # 0
+                #     [-d,-d,-d], # 1
+                #     [-d,-d, d], # 2
+                #     [-d, d,-d], # 3
+                #     [-d, d, d], # 4
+                #     [ d,-d,-d], # 5
+                #     [ d,-d, d], # 6
+                #     [ d, d,-d], # 7
+                #     [ d, d, d]])# 8
+                # unit_box *= self.param[i]['scale']
+                # landmarks_3d = unit_box @ self.param[i]['rotation'].T + self.param[i]['translation']
+                # print('Check computation of landmarks_3d', 
+                #     np.allclose(landmarks_3d, self.param[i]['landmarks_3d'])) # Should get True
+
+                # Change fr objectron to Open3D camera coor
+                self.param[i]['landmarks_3d'] = self.param[i]['landmarks_3d'] @ self.coc.T
+                self.param[i]['rotation']     = self.coc @ self.param[i]['rotation']
+                self.param[i]['translation']  = self.coc @ self.param[i]['translation']
 
         return self.param
 

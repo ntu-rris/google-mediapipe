@@ -24,7 +24,7 @@ mode = args.mode
 cap = cv2.VideoCapture(0) # By default webcam is index 0
 # cap = cv2.VideoCapture('../data/video.mp4') # Read from .mp4 file
 
-# Read in an image to estimate camera intrinsic
+# Read in sample image to estimate camera intrinsic
 ret, img = cap.read(0)
 # img = cv2.resize(img, None, fx=0.5, fy=0.5)
 img_width  = img.shape[1]
