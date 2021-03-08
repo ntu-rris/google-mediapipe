@@ -139,7 +139,7 @@ function getFlexionAng(results, j0, j1, j2) {
   var B = rescale(results.multiHandLandmarks[0][j1]);
   var C = rescale(results.multiHandLandmarks[0][j2]);
   // 2nd: Find the acute angle at joint j1
-  return padLeadingZeros(getAngBtw3PtsHand(A, B, C).toFixed(0), 3);
+  return padLeadingZeros(getAngBtw3Pts(A, B, C).toFixed(0), 3);
 }
 
 function rescale(lm) {
