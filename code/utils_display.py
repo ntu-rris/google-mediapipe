@@ -1162,7 +1162,7 @@ class DisplayObjectron:
                     color = [(0,0,255),(0,255,0),(255,0,0)] # BGR
                     for i in range(1,4):
                         (x0, y0), (x1, y1) = axis_2D[0], axis_2D[i]
-                        cv2.line(img, (int(x0), int(y0)), (int(x1), int(y1)), color[i-1], 2)                 
+                        cv2.arrowedLine(img, (int(x0), int(y0)), (int(x1), int(y1)), color[i-1], 2)                 
 
             # Label fps
             if p['fps']>0:

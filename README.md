@@ -7,11 +7,12 @@
 The main purpose of this repo is to:
 * Customize output of MediaPipe solutions
 * Customize visualization of 2D & 3D outputs
-* Demo some simple applications (refer to [Demo Overview](#demo-overview))
+* Demo some simple applications on Python (refer to [Demo Overview](#demo-overview))
+* Demo some simple applications on JavaScript refer to [java](java/) folder
 
 
 ## Pose Estimation with Input Color Image
-Attractiveness of Google MediaPipe as compared to other SOTA (e.g. [CMU OpenPose](https://github.com/CMU-Perceptual-Computing-Lab/openpose), [DeepPoseKit](https://github.com/jgraving/DeepPoseKit), [DeepLabCut](https://github.com/DeepLabCut/DeepLabCut), [MinimalHand](https://github.com/CalciferZh/minimal-hand)):
+Attractiveness of Google MediaPipe as compared to other SOTA (e.g. [FrankMocap](https://github.com/facebookresearch/frankmocap), [CMU OpenPose](https://github.com/CMU-Perceptual-Computing-Lab/openpose), [DeepPoseKit](https://github.com/jgraving/DeepPoseKit), [DeepLabCut](https://github.com/DeepLabCut/DeepLabCut), [MinimalHand](https://github.com/CalciferZh/minimal-hand)):
 * **Fast**: Runs at almost realtime rate on CPU and even mobile devices
 * **Open-source**: Codes are freely available at [github](https://github.com/google/mediapipe) (except that [details of network models are not released](https://github.com/google/mediapipe/issues/155))
 * **User-friendly**: For python API just `pip install mediapipe` will work (but C++ API is much more troublesome to [build and use](https://google.github.io/mediapipe/getting_started/cpp))
@@ -19,7 +20,7 @@ Attractiveness of Google MediaPipe as compared to other SOTA (e.g. [CMU OpenPose
 * **ML Solutions**: Apart from face, hand, body and object pose estimations, MediaPipe offers an array of machine learning applications refer to their [github](https://github.com/google/mediapipe) for more details
 
 ## Features
-Latest [MediaPipe Python API version 0.8.3](https://pypi.org/project/mediapipe/) (Released 28 Feb 2021) features:
+Latest [MediaPipe Python API version 0.8.3.1](https://pypi.org/project/mediapipe/) (Released 3 Mar 2021) features:
 
 **Face Mesh** (468 **3D** face landmarks)
 
