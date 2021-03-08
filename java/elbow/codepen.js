@@ -164,13 +164,13 @@ function rescale(lm) {
 
 function getAngBtw3Pts(A, B, C) {
   // Note: Points A, B and C are 3D points with x,y,z
-  // 1st: Find vector BA (a,b,c) and BC (d,e,f)
-  // 2nd: Find acute angle between vector BA and BC using cosine rule
+  // 1st: Find vector AB (a,b,c) and BC (d,e,f)
+  // 2nd: Find acute angle between vector AB and BC using cosine rule
   
-  // Find vector BA = OA - OB
-  var a = A.x - B.x;
-  var b = A.y - B.y;
-  var c = A.z - B.z;
+  // Find vector AB = OB - OA
+  var a = B.x - A.x;
+  var b = B.y - A.y;
+  var c = B.z - A.z;
   // Find vector BC = OC - OB
   var d = C.x - B.x;
   var e = C.y - B.y;

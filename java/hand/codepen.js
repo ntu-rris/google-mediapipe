@@ -152,12 +152,12 @@ function rescale(lm) {
   return A;
 }
 
-function getAngBtw3PtsHand(A, B, C) {
+function getAngBtw3Pts(A, B, C) {
   // Note: Points A, B and C are 3D points with x,y,z
   // 1st: Find vector AB (a,b,c) and BC (d,e,f)
-  // 2nd: Find acute angle between vector BA and BC using cosine rule
+  // 2nd: Find acute angle between vector AB and BC using cosine rule
   
-  // Find vector AB = OB - OA (Note: For elbow is BA = OA - OB)
+  // Find vector AB = OB - OA
   var a = B.x - A.x;
   var b = B.y - A.y;
   var c = B.z - A.z;
