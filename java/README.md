@@ -4,5 +4,7 @@ Click on the links below to try out realtime, online, markerless pose estimation
 
 * [Extract left and right elbow flexion angles](https://codepen.io/rris/full/YzpLrVg)
 * [Extract hand flexion angles](https://codepen.io/rris/full/vYyVyoa)
+* [Fruit ninja game with wrist joint](https://codepen.io/rris/full/ExNOLNp)
+* [Fruit ninja game with index fingertip](https://codepen.io/rris/full/jOVQjbj)
 
 Refer to [MediaPipe project on CodePen](https://codepen.io/mediapipe) for more examples.

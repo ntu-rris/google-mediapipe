@@ -1,0 +1,36 @@
+html, body {
+  padding: 0;
+  margin: 0;
+}
+
+.control-panel {
+  position: absolute;
+  left: 10px;
+  top: 40px;
+}
+
+.input_video {
+  position:absolute;
+  top: 0px;
+  left: 0px;
+  opacity: 0.5;  
+  width:1280px;
+  height:720px;
+  &.selfie {
+    transform: scale(-1, 1);
+  }  
+}
+
+div#game {
+  width:100%;
+  height:100%;
+}
+
+#mouse-circle {
+  position: absolute;
+  width: 30px; 
+  height: 30px; 
+  border-radius: 50%;
+  background-color: yellow;
+  pointer-events: none !important;
+}

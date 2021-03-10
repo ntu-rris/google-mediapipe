@@ -1,10 +1,7 @@
 // Our input frames will come from here.
-const videoElement =
-    document.getElementsByClassName('input_video')[0];
-const canvasElement =
-    document.getElementsByClassName('output_canvas')[0];
-const controlsElement =
-    document.getElementsByClassName('control-panel')[0];
+const videoElement = document.getElementsByClassName('input_video')[0];
+const canvasElement = document.getElementsByClassName('output_canvas')[0];
+const controlsElement = document.getElementsByClassName('control-panel')[0];
 const canvasCtx = canvasElement.getContext('2d');
 
 // We'll add this to our control panel later, but we'll save it here so we can
@@ -16,6 +13,24 @@ const spinner = document.querySelector('.loading');
 spinner.ontransitionend = () => {
   spinner.style.display = 'none';
 };
+
+// Exponential filter to filter out high frequency noise
+var alpha = 0.5;
+var thumb1 = 0;
+var thumb2 = 0;
+var thumb3 = 0;
+var index1 = 0;
+var index2 = 0;
+var index3 = 0;
+var middle1 = 0;
+var middle2 = 0;
+var middle3 = 0;
+var ring1 = 0;
+var ring2 = 0;
+var ring3 = 0;
+var little1 = 0;
+var little2 = 0;
+var little3 = 0;
 
 function onResults(results) {
   // Hide the spinner.
@@ -47,33 +62,77 @@ function onResults(results) {
     }
     
     // Compute hand joint flexion angles
-    // thumb1 = getFlexionAng(results, 0,1,2); // CMC hide this value as it is not accurate
-    thumb2 = getFlexionAng(results, 1,2,3); // MCP
-    thumb3 = getFlexionAng(results, 2,3,4); // IP
+    // thumb1 = alpha*getFlexionAng(results, 0,1,2) + (1-alpha)*thumb1; // CMC hide this value as it is not accurate
+    thumb2 = alpha*getFlexionAng(results, 1,2,3) + (1-alpha)*thumb2; // MCP
+    thumb3 = alpha*getFlexionAng(results, 2,3,4) + (1-alpha)*thumb3; // IP
 
-    index1 = getFlexionAng(results, 0,5,6); // MCP
-    index2 = getFlexionAng(results, 5,6,7); // PIP
-    index3 = getFlexionAng(results, 6,7,8); // DIP
+    index1 = alpha*getFlexionAng(results, 0,5,6) + (1-alpha)*index1; // MCP
+    index2 = alpha*getFlexionAng(results, 5,6,7) + (1-alpha)*index2; // PIP
+    index3 = alpha*getFlexionAng(results, 6,7,8) + (1-alpha)*index3; // DIP
 
-    middle1 = getFlexionAng(results,  0, 9,10); // MCP
-    middle2 = getFlexionAng(results,  9,10,11); // PIP
-    middle3 = getFlexionAng(results, 10,11,12); // DIP
+    middle1 = alpha*getFlexionAng(results,  0, 9,10) + (1-alpha)*middle1; // MCP
+    middle2 = alpha*getFlexionAng(results,  9,10,11) + (1-alpha)*middle2; // PIP
+    middle3 = alpha*getFlexionAng(results, 10,11,12) + (1-alpha)*middle3; // DIP
 
-    ring1 = getFlexionAng(results,  0,13,14); // MCP
-    ring2 = getFlexionAng(results, 13,14,15); // PIP
-    ring3 = getFlexionAng(results, 14,15,16); // DIP
+    ring1 = alpha*getFlexionAng(results,  0,13,14) + (1-alpha)*ring1; // MCP
+    ring2 = alpha*getFlexionAng(results, 13,14,15) + (1-alpha)*ring2; // PIP
+    ring3 = alpha*getFlexionAng(results, 14,15,16) + (1-alpha)*ring3; // DIP
 
-    little1 = getFlexionAng(results,  0,17,18); // MCP
-    little2 = getFlexionAng(results, 17,18,19); // PIP
-    little3 = getFlexionAng(results, 18,19,20); // DIP
+    little1 = alpha*getFlexionAng(results,  0,17,18) + (1-alpha)*little1; // MCP
+    little2 = alpha*getFlexionAng(results, 17,18,19) + (1-alpha)*little2; // PIP
+    little3 = alpha*getFlexionAng(results, 18,19,20) + (1-alpha)*little3; // DIP
 
     // Display hand joint angles
-    document.getElementById('Thumb' ).innerHTML = 'T. MCP: ' + thumb2  + '  IP: ' + thumb3  + ' deg';
-    document.getElementById('Index' ).innerHTML = 'I. MCP: ' + index1  + ' PIP: ' + index2  + ' PIP: ' + index3  + ' deg';
-    document.getElementById('Middle').innerHTML = 'M. MCP: ' + middle1 + ' PIP: ' + middle2 + ' PIP: ' + middle3 + ' deg';  
-    document.getElementById('Ring'  ).innerHTML = 'R. MCP: ' + ring1   + ' PIP: ' + ring2   + ' PIP: ' + ring3   + ' deg';
-    document.getElementById('Little').innerHTML = 'L. MCP: ' + little1 + ' PIP: ' + little2 + ' PIP: ' + little3 + ' deg';    
+    document.getElementById('Thumb' ).innerHTML = 
+      'T. MCP: ' + 
+      padLeadingZeros(thumb2.toFixed(0), 3)  + 
+      '  IP: ' + 
+      padLeadingZeros(thumb3.toFixed(0), 3)  + ' deg';
+    document.getElementById('Index' ).innerHTML = 
+      'I. MCP: ' + 
+      padLeadingZeros(index1.toFixed(0), 3)  + 
+      ' PIP: ' + 
+      padLeadingZeros(index2.toFixed(0), 3)  +
+      ' DIP: ' + 
+      padLeadingZeros(index3.toFixed(0), 3)  + ' deg';
+    document.getElementById('Middle').innerHTML = 
+      'M. MCP: ' + 
+      padLeadingZeros(middle1.toFixed(0), 3)  +
+      ' PIP: ' + 
+      padLeadingZeros(middle2.toFixed(0), 3)  +
+      ' DIP: ' + 
+      padLeadingZeros(middle3.toFixed(0), 3)  + ' deg';  
+    document.getElementById('Ring'  ).innerHTML = 
+      'R. MCP: ' + 
+      padLeadingZeros(ring1.toFixed(0), 3)  +
+      ' PIP: ' + 
+      padLeadingZeros(ring2.toFixed(0), 3)  +
+      ' DIP: ' + 
+      padLeadingZeros(ring3.toFixed(0), 3)  + ' deg';
+    document.getElementById('Little').innerHTML = 
+      'L. MCP: ' + 
+      padLeadingZeros(little1.toFixed(0), 3)  +
+      ' PIP: ' + 
+      padLeadingZeros(little2.toFixed(0), 3)  +
+      ' DIP: ' + 
+      padLeadingZeros(little3.toFixed(0), 3)  + ' deg';    
     
+    // Display progress bar
+    var progress = ((thumb2 + thumb3)/180*100).toFixed(0);
+    document.getElementById("pThumb").style.width = progress + "%";
+    document.getElementById("pThumb").innerHTML   = progress + "%";
+    var progress = ((index1 + index2 + index3)/270*100).toFixed(0);
+    document.getElementById("pIndex").style.width = progress + "%";
+    document.getElementById("pIndex").innerHTML   = progress + "%";
+    var progress = ((middle1 + middle2 + middle3)/270*100).toFixed(0);
+    document.getElementById("pMiddle").style.width = progress + "%";
+    document.getElementById("pMiddle").innerHTML   = progress + "%";
+    var progress = ((ring1 + ring2 + ring3)/270*100).toFixed(0);
+    document.getElementById("pRing").style.width = progress + "%";
+    document.getElementById("pRing").innerHTML   = progress + "%";
+    var progress = ((little1 + little2 + little3)/270*100).toFixed(0);
+    document.getElementById("pLittle").style.width = progress + "%";
+    document.getElementById("pLittle").innerHTML   = progress + "%";
   }
   canvasCtx.restore();
 }
@@ -99,7 +158,7 @@ camera.start();
 // options.
 new ControlPanel(controlsElement, {
       selfieMode: true,
-      maxNumHands: 2,
+      maxNumHands: 1,
       minDetectionConfidence: 0.5,
       minTrackingConfidence: 0.5,
       pauseCamera: false,
@@ -139,7 +198,7 @@ function getFlexionAng(results, j0, j1, j2) {
   var B = rescale(results.multiHandLandmarks[0][j1]);
   var C = rescale(results.multiHandLandmarks[0][j2]);
   // 2nd: Find the acute angle at joint j1
-  return padLeadingZeros(getAngBtw3Pts(A, B, C).toFixed(0), 3);
+  return getAngBtw3Pts(A, B, C);
 }
 
 function rescale(lm) {
@@ -176,7 +235,6 @@ function getAngBtw3Pts(A, B, C) {
   // Convert radian to degree  
   return ang * 180 / Math.PI;
 }
-
 
 function padLeadingZeros(num, size) {
   // Adapted from https://www.codegrepper.com/code-examples/javascript/convert+to+number+keep+leading+zeros+javascript
