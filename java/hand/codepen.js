@@ -32,6 +32,27 @@ var little1 = 0;
 var little2 = 0;
 var little3 = 0;
 
+// For progress display
+var progress1 = 0;
+var progress2 = 0;
+var progress3 = 0;
+var progress4 = 0;
+var progress5 = 0;
+
+// For playing sound
+var enableSound = false;
+var soundThres = 20;
+var sound1 = new Audio('https://assets.codepen.io/5628206/beat_1.mp3');
+var sound2 = new Audio('https://assets.codepen.io/5628206/beat_2.mp3');
+var sound3 = new Audio('https://assets.codepen.io/5628206/beat_3.mp3');
+var sound4 = new Audio('https://assets.codepen.io/5628206/beat_4.mp3');
+var sound5 = new Audio('https://assets.codepen.io/5628206/beat_5.mp3');
+var play1 = false;
+var play2 = false;
+var play3 = false;
+var play4 = false;
+var play5 = false;
+
 function onResults(results) {
   // Hide the spinner.
   document.body.classList.add('loaded');
@@ -118,21 +139,65 @@ function onResults(results) {
       padLeadingZeros(little3.toFixed(0), 3)  + ' deg';    
     
     // Display progress bar
-    var progress = ((thumb2 + thumb3)/180*100).toFixed(0);
-    document.getElementById("pThumb").style.width = progress + "%";
-    document.getElementById("pThumb").innerHTML   = progress + "%";
-    var progress = ((index1 + index2 + index3)/270*100).toFixed(0);
-    document.getElementById("pIndex").style.width = progress + "%";
-    document.getElementById("pIndex").innerHTML   = progress + "%";
-    var progress = ((middle1 + middle2 + middle3)/270*100).toFixed(0);
-    document.getElementById("pMiddle").style.width = progress + "%";
-    document.getElementById("pMiddle").innerHTML   = progress + "%";
-    var progress = ((ring1 + ring2 + ring3)/270*100).toFixed(0);
-    document.getElementById("pRing").style.width = progress + "%";
-    document.getElementById("pRing").innerHTML   = progress + "%";
-    var progress = ((little1 + little2 + little3)/270*100).toFixed(0);
-    document.getElementById("pLittle").style.width = progress + "%";
-    document.getElementById("pLittle").innerHTML   = progress + "%";
+    progress1 = ((thumb2 + thumb3)/180*100).toFixed(0);
+    document.getElementById("pThumb").style.width = progress1 + "%";
+    document.getElementById("pThumb").innerHTML   = progress1 + "%";
+    progress2 = ((index1 + index2 + index3)/270*100).toFixed(0);
+    document.getElementById("pIndex").style.width = progress2 + "%";
+    document.getElementById("pIndex").innerHTML   = progress2 + "%";
+    progress3 = ((middle1 + middle2 + middle3)/270*100).toFixed(0);
+    document.getElementById("pMiddle").style.width = progress3 + "%";
+    document.getElementById("pMiddle").innerHTML   = progress3 + "%";
+    progress4 = ((ring1 + ring2 + ring3)/270*100).toFixed(0);
+    document.getElementById("pRing").style.width = progress4 + "%";
+    document.getElementById("pRing").innerHTML   = progress4 + "%";
+    progress5 = ((little1 + little2 + little3)/270*100).toFixed(0);
+    document.getElementById("pLittle").style.width = progress5 + "%";
+    document.getElementById("pLittle").innerHTML   = progress5 + "%";
+
+    // Play sound
+    if(enableSound) {
+      if((thumb3 > soundThres) && (!play1)) {
+        sound1.currentTime = 0;
+        sound1.play();
+        play1 = true;
+      }
+      if(thumb3 <= soundThres) {
+        play1 = false;
+      }
+      if((index1 > soundThres) && (!play2)) {
+        sound2.currentTime = 0;
+        sound2.play();
+        play2 = true;
+      }
+      if(index1 <= soundThres) {
+        play2 = false;
+      }
+      if((middle1 > soundThres) && (!play3)) {
+        sound3.currentTime = 0;
+        sound3.play();
+        play3 = true;
+      }
+      if(middle1 <= soundThres) {
+        play3 = false;
+      }
+      if((ring1 > soundThres) && (!play4)) {
+        sound4.currentTime = 0;
+        sound4.play();
+        play4 = true;
+      }
+      if(ring1 <= soundThres) {
+        play4 = false;
+      }
+      if((little1 > soundThres) && (!play5)) {
+        sound5.currentTime = 0;
+        sound5.play();
+        play5 = true;
+      }
+      if(little1 <= soundThres) {
+        play5 = false;
+      }
+    }
   }
   canvasCtx.restore();
 }
@@ -162,12 +227,14 @@ new ControlPanel(controlsElement, {
       minDetectionConfidence: 0.5,
       minTrackingConfidence: 0.5,
       pauseCamera: false,
+      playSound: false,
     })
     .add([
       new StaticText({title: 'Hand flexion angle'}),
       fpsControl,
       new Toggle({title: 'Selfie Mode', field: 'selfieMode'}),
       new Toggle({ title: "Pause Camera", field: "pauseCamera" }),
+      new Toggle({ title: "Play Sound", field: "playSound" }),
       // new Slider(
       //     {title: 'Max Number of Hands', field: 'maxNumHands', range: [1, 4], step: 1}),
       // new Slider({
@@ -187,7 +254,9 @@ new ControlPanel(controlsElement, {
       videoElement.classList.toggle('selfie', options.selfieMode);
       hands.setOptions(options);
       // Add option to pause camera
-      options.pauseCamera ? camera.video.pause() : camera.start();      
+      options.pauseCamera ? camera.video.pause() : camera.start();
+      // Add option to play sound
+      options.playSound ? enableSound=true : enableSound=false;      
     });
 
 // Added by GM
