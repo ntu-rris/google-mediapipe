@@ -67,12 +67,12 @@ if mode=='hand':
         disp[i] = DisplayHand(draw3d=True, max_num_hands=1, vis=vis)
 elif mode=='body':
     for i in range(len(cam_idx)):
-        pipe[i] = MediaPipeBody(static_image_mode=False, upper_body_only=False)
-        disp[i] = DisplayBody(draw3d=True, upper_body_only=False, vis=vis)
+        pipe[i] = MediaPipeBody(static_image_mode=False, model_complexity=1)
+        disp[i] = DisplayBody(draw3d=True, vis=vis)
 elif mode=='holistic':
     for i in range(len(cam_idx)):
-        pipe[i] = MediaPipeHolistic(static_image_mode=False, upper_body_only=False)
-        disp[i] = DisplayHolistic(draw3d=True, upper_body_only=False, vis=vis)
+        pipe[i] = MediaPipeHolistic(static_image_mode=False, model_complexity=1)
+        disp[i] = DisplayHolistic(draw3d=True, vis=vis)
 else:
     print('Undefined mode only the following modes are available: \n hand / body / holistic')
     sys.exit()

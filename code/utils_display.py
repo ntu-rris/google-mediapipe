@@ -637,7 +637,7 @@ class DisplayHand:
 
 
 class DisplayBody:
-    def __init__(self, draw3d=False, draw_camera=False, intrin=None, upper_body_only=True, vis=None):
+    def __init__(self, draw3d=False, draw_camera=False, intrin=None, vis=None):
         if intrin is None:
             self.intrin = intrin_default
         else:
@@ -666,14 +666,6 @@ class DisplayBody:
                       [0,120,255],[0,180,255], # Torso
                       [255,60,0],[0,255,60],[255,120,0],[0,255,120],
                       [255,180,0],[0,255,180],[255,240,0],[0,255,240]]
-
-        # Limit number of landmark, ktree and color to first 25 values
-        self.num_landmark = 33
-        if upper_body_only:
-            self.num_landmark = 25
-            self.ktree = self.ktree[:25]
-            self.color = self.color[:25]
-
         self.color = np.asarray(self.color)
         self.color_ = self.color / 255 # For Open3D RGB
         self.color[:,[0,2]] = self.color[:,[2,0]] # For OpenCV BGR
@@ -690,7 +682,7 @@ class DisplayBody:
                 self.vis.create_window(
                     width=self.intrin['width'], height=self.intrin['height'])
                 self.vis.get_render_option().point_size = 8.0
-            joint = np.zeros((self.num_landmark,3))
+            joint = np.zeros((33,3))
 
             # Draw joints
             self.pcd = o3d.geometry.PointCloud()
@@ -709,9 +701,6 @@ class DisplayBody:
                                 [15,17],[16,18],[17,19],[18,20],[15,21],[16,22], # Hand
                                 [23,24],[12,24], # Torso
                                 [23,25],[24,26],[25,27],[26,28],[27,29],[28,30],[27,31],[28,32]] # Leg
-
-            if upper_body_only:
-                bone_connections = bone_connections[:24]
             self.bone.lines  = o3d.utility.Vector2iVector(bone_connections)
 
             # Draw world reference frame
@@ -748,7 +737,7 @@ class DisplayBody:
         p = param
         if p['detect']:
             # Loop through keypoint for body
-            for i in range(self.num_landmark):
+            for i in range(33):
                 x = int(p['keypt'][i,0])
                 y = int(p['keypt'][i,1])
                 if x>0 and y>0 and x<img_width and y<img_height:
@@ -793,7 +782,7 @@ class DisplayBody:
             max_depth = max(p['joint'][:,2])
 
             # Loop through keypt and joint for body hand
-            for i in range(self.num_landmark):
+            for i in range(33):
                 x = int(p['keypt'][i,0])
                 y = int(p['keypt'][i,1])
                 if x>0 and y>0 and x<img_width and y<img_height:
@@ -825,8 +814,8 @@ class DisplayBody:
             self.pcd.points = o3d.utility.Vector3dVector(param['joint'])
             self.bone.points = o3d.utility.Vector3dVector(param['joint'])
         else:
-            self.pcd.points = o3d.utility.Vector3dVector(np.zeros((self.num_landmark,3)))
-            self.bone.points = o3d.utility.Vector3dVector(np.zeros((self.num_landmark,3)))
+            self.pcd.points = o3d.utility.Vector3dVector(np.zeros((33,3)))
+            self.bone.points = o3d.utility.Vector3dVector(np.zeros((33,3)))
 
 
     def draw3d_(self, param, img=None):
@@ -838,8 +827,8 @@ class DisplayBody:
             self.pcd.points = o3d.utility.Vector3dVector(param['joint_3d'])
             self.bone.points = o3d.utility.Vector3dVector(param['joint_3d'])
         else:
-            self.pcd.points = o3d.utility.Vector3dVector(np.zeros((self.num_landmark,3)))
-            self.bone.points = o3d.utility.Vector3dVector(np.zeros((self.num_landmark,3)))
+            self.pcd.points = o3d.utility.Vector3dVector(np.zeros((33,3)))
+            self.bone.points = o3d.utility.Vector3dVector(np.zeros((33,3)))
 
         if img is not None:
             img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
@@ -847,7 +836,7 @@ class DisplayBody:
 
 
 class DisplayHolistic:
-    def __init__(self, draw3d=False, draw_camera=False, intrin=None, upper_body_only=True, vis=None):
+    def __init__(self, draw3d=False, draw_camera=False, intrin=None, vis=None):
         if intrin is None:
             self.intrin = intrin_default
         else:
@@ -868,8 +857,7 @@ class DisplayHolistic:
             self.disp_face = DisplayFace(draw3d=True, vis=self.vis, intrin=self.intrin)
             self.disp_hand = DisplayHand(draw3d=True, vis=self.vis, intrin=self.intrin,
                 max_num_hands=2)
-            self.disp_body = DisplayBody(draw3d=True, vis=self.vis, intrin=self.intrin,
-                upper_body_only=upper_body_only)
+            self.disp_body = DisplayBody(draw3d=True, vis=self.vis, intrin=self.intrin)
 
             if draw_camera:
                 # Draw camera frustum
@@ -886,8 +874,7 @@ class DisplayHolistic:
         else:
             self.disp_face = DisplayFace(draw3d=False)
             self.disp_hand = DisplayHand(draw3d=False, max_num_hands=2)
-            self.disp_body = DisplayBody(draw3d=False, 
-                upper_body_only=upper_body_only, draw_camera=False)
+            self.disp_body = DisplayBody(draw3d=False, draw_camera=False)
 
 
     def draw2d(self, img, param):

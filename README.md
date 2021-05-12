@@ -20,7 +20,7 @@ Attractiveness of Google MediaPipe as compared to other SOTA (e.g. [FrankMocap](
 * **ML Solutions**: Apart from face, hand, body and object pose estimations, MediaPipe offers an array of machine learning applications refer to their [github](https://github.com/google/mediapipe) for more details
 
 ## Features
-Latest [MediaPipe Python API version 0.8.3.1](https://pypi.org/project/mediapipe/) (Released 3 Mar 2021) features:
+Latest [MediaPipe Python API version 0.8.4.2](https://pypi.org/project/mediapipe/) (Released 11 May 2021) features:
 
 **Face Mesh** (468 **3D** face landmarks)
 
@@ -30,7 +30,7 @@ Latest [MediaPipe Python API version 0.8.3.1](https://pypi.org/project/mediapipe
 
 * [**Blog**](https://ai.googleblog.com/2019/08/on-device-real-time-hand-tracking-with.html) | [**Code**](https://google.github.io/mediapipe/solutions/hands) | [**Paper**](https://arxiv.org/abs/2006.10214) |  [**Video**](https://www.youtube.com/watch?v=I-UOrvxxXEk) | [**Model Card**](https://drive.google.com/file/d/1yiPfkhb4hSbXJZaSq9vDmhz24XVZmxpL/view)
 
-**Body Pose** (33 **3D (NEW)** landmarks for whole body / 25 **2D** landmarks for upper-body)
+**Body Pose** (33 **3D** landmarks for whole body, **3 levels of model complexity (NEW)**)
 
 * [**Blog**](https://ai.googleblog.com/2020/08/on-device-real-time-body-pose-tracking.html) | [**Code**](https://google.github.io/mediapipe/solutions/pose) | [**Paper**](https://arxiv.org/abs/2006.10204) |  [**Video**](https://www.youtube.com/watch?v=YPpUOTRn5tA&feature=emb_logo) | [**Model Card**](https://drive.google.com/file/d/1zhYyUXhQrb_Gp0lKUFv1ADT3OCxGEQHS/view)
 
@@ -38,7 +38,7 @@ Latest [MediaPipe Python API version 0.8.3.1](https://pypi.org/project/mediapipe
 
 * [**Blog**](https://ai.googleblog.com/2020/12/mediapipe-holistic-simultaneous-face.html) | [**Code**](https://google.github.io/mediapipe/solutions/holistic#smooth_landmarks)
 
-**Objectron (3D object detection and tracking (NEW))** (4 possible objects: Shoe / Chair / Camera / Cup)
+**Objectron (3D object detection and tracking)** (4 possible objects: Shoe / Chair / Camera / Cup)
 
 * [**Blog**](https://ai.googleblog.com/2020/03/real-time-3d-object-detection-on-mobile.html) | [**Code**](https://google.github.io/mediapipe/solutions/objectron) | [**Paper**](https://arxiv.org/abs/2003.03522) | [**Paper**](https://drive.google.com/file/d/1O_zHmlgXIzAdKljp20U_JUkEHOGG52R8/view) | [**Model Card**](https://drive.google.com/file/d/1CMhN7Npdq0Dt2j0_z69mai2-m7oUTRKF/view)
 

@@ -37,8 +37,8 @@ side = args.side
 
 # Load mediapipe and display class
 if mode==0 or mode==1: # Note; To determine wrist rom need upper body elbow joint
-    pipe = MediaPipeHolistic(static_image_mode=False, upper_body_only=True)
-    disp = DisplayHolistic(draw3d=True, upper_body_only=True)
+    pipe = MediaPipeHolistic(static_image_mode=False, model_complexity=1)
+    disp = DisplayHolistic(draw3d=True)
 elif mode==2:
     pipe = MediaPipeHand(static_image_mode=False, max_num_hands=1)
     disp = DisplayHand(draw3d=True, max_num_hands=1)

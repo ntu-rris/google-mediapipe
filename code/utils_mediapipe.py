@@ -7,8 +7,6 @@ import cv2
 import numpy as np
 import mediapipe as mp
 
-mp_drawing = mp.solutions.drawing_utils
-mp_objectron = mp.solutions.objectron
 
 # Define default camera intrinsic
 img_width  = 640
@@ -63,7 +61,6 @@ class MediaPipeFace:
                 'detect'  : False, # Boolean to indicate whether a face is detected
                 'keypt'   : np.zeros((468,2)), # 2D keypt in image coordinate (pixel)
                 'joint'   : np.zeros((468,3)), # 3D joint in relative coordinate
-                'joint_3d': np.zeros((468,3)), # 3D joint in camera coordinate (m)
                 'fps'     : -1, # Frame per sec
             }
             self.param.append(p)
@@ -153,7 +150,7 @@ class MediaPipeHand:
                 'keypt'   : np.zeros((21,2)), # 2D keypt in image coordinate (pixel)
                 'joint'   : np.zeros((21,3)), # 3D joint in relative coordinate
                 'joint_3d': np.zeros((21,3)), # 3D joint in camera coordinate (m)
-                'class'   : None,             # Left / none hand
+                'class'   : None,             # Left / right / none hand
                 'score'   : 0,                # Probability of predicted handedness (always>0.5, and opposite handedness=1-score)
                 'angle'   : np.zeros(15),     # Flexion joint angles in degree
                 'gesture' : None,             # Type of hand gesture
@@ -255,7 +252,7 @@ class MediaPipeHand:
         param['joint_3d'][:,1] = param['joint'][:,1]*intrin['height']-intrin['cy']
         param['joint_3d'][:,2] = param['joint'][:,2]*intrin['width']
 
-        # Assume average depth is fixed at 60 cm (works best when the hand is around 50 to 70 cm from camera)
+        # Assume average depth is fixed at 0.6 m (works best when the hand is around 0.5 to 0.7 m from camera)
         Zavg = 0.6
         # Average focal length of fx and fy
         favg = (intrin['fx']+intrin['fy'])*0.5
@@ -265,7 +262,7 @@ class MediaPipeHand:
         param['joint_3d'] /= S
 
         # Estimate wrist depth using similar triangle
-        D = 0.08 # Note: Hardcode actual dist btw wrist and index finger MCP as 8cm
+        D = 0.08 # Note: Hardcode actual dist btw wrist and index finger MCP as 0.08 m
         # Dist btw wrist and index finger MCP keypt (in 2D image coor)
         d = np.linalg.norm(param['keypt'][0] - param['keypt'][9])
         # d/f = D/Z -> Z = D/d*f
@@ -288,7 +285,7 @@ class MediaPipeHand:
 
 
 class MediaPipeBody:
-    def __init__(self, static_image_mode=True, upper_body_only=True, intrin=None):
+    def __init__(self, static_image_mode=True, model_complexity=1, intrin=None):
         if intrin is None:
             self.intrin = intrin_default
         else:
@@ -304,11 +301,10 @@ class MediaPipeBody:
         #   For unrelated images set to True: 
         #   To allow detection of the most prominent person to run on every input images
         
-        # upper_body_only:
-        #   If set to true, outputs only 25 upper-body pose landmarks
-        #   Otherwise, outputs full set of 33 pose landmarks
-        #   Note that upper-body-only prediction may be more accurate 
-        #   for use cases where the lower-body parts are mostly out of view
+        # model_complexity:
+        #   Complexity of the pose landmark model: 0, 1 or 2. 
+        #   Landmark accuracy as well as inference latency generally 
+        #   go up with the model complexity. Default to 1.
         
         # smooth_landmarks:
         #   If set to true, filters pose landmarks across different input images
@@ -328,24 +324,18 @@ class MediaPipeBody:
 
         self.pipe = mp_body.Pose(
             static_image_mode=static_image_mode,
-            upper_body_only=upper_body_only,
+            model_complexity=model_complexity,
             smooth_landmarks=True,
             min_detection_confidence=0.5,
             min_tracking_confidence=0.5)
 
-        if upper_body_only:
-            num_landmark = 25
-        else:
-            num_landmark = 33
-
         # Define body parameter
         self.param = {
                 'detect'  : False, # Boolean to indicate whether a person is detected
-                'keypt'   : np.zeros((num_landmark,2)), # 2D keypt in image coordinate (pixel)
-                'joint'   : np.zeros((num_landmark,3)), # 3D joint in relative coordinate
-                'joint_3d': np.zeros((num_landmark,3)), # 3D joint in camera coordinate (m)
-                'visible' : np.zeros(num_landmark),     # Visibility: Likelihood [0,1] of being visible (present and not occluded) in the image
-                # 'presence': np.zeros(num_landmark), # Presence: Likelihood [0,1] of being present in the image or if its located outside the image
+                'keypt'   : np.zeros((33,2)), # 2D keypt in image coordinate (pixel)
+                'joint'   : np.zeros((33,3)), # 3D joint in relative coordinate
+                'joint_3d': np.zeros((33,3)), # 3D joint in camera coordinate (m)
+                'visible' : np.zeros(33),     # Visibility: Likelihood [0,1] of being visible (present and not occluded) in the image
                 'fps'     : -1, # Frame per sec
             }
 
@@ -366,10 +356,9 @@ class MediaPipeBody:
 
                 self.param['joint'][j,0] = lm.x
                 self.param['joint'][j,1] = lm.y
-                self.param['joint'][j,2] = lm.z # Note: As of version 0.8.3, z is predicted only in full-body mode, and should be discarded when upper_body_only is true
+                self.param['joint'][j,2] = lm.z
 
                 self.param['visible'][j] = lm.visibility
-                # self.param['presence'][j] = lm.presence # Seems to be removed in version 0.8.3
 
             # Convert relative 3D joint to actual 3D joint in m
             self.convert_relative_to_actual_3d_joint(self.param, self.intrin)
@@ -416,7 +405,7 @@ class MediaPipeBody:
 
 
 class MediaPipeHolistic:
-    def __init__(self, static_image_mode=True, upper_body_only=True, intrin=None):
+    def __init__(self, static_image_mode=True, model_complexity=1, intrin=None):
         if intrin is None:
             self.intrin = intrin_default
         else:
@@ -432,11 +421,10 @@ class MediaPipeHolistic:
         #   For unrelated images set to True: 
         #   To allow detection of the most prominent person to run on every input images
         
-        # upper_body_only:
-        #   If set to true, outputs only 25 upper-body pose landmarks (535 in total)
-        #   Otherwise, outputs full set of 33 pose landmarks (543 in total)
-        #   Note that upper-body-only prediction may be more accurate 
-        #   for use cases where the lower-body parts are mostly out of view
+        # model_complexity:
+        #   Complexity of the pose landmark model: 0, 1 or 2. 
+        #   Landmark accuracy as well as inference latency generally 
+        #   go up with the model complexity. Default to 1.
         
         # smooth_landmarks:
         #   If set to true, filters pose landmarks across different input images
@@ -456,7 +444,7 @@ class MediaPipeHolistic:
 
         self.pipe = mp_holisitic.Holistic(
             static_image_mode=static_image_mode,
-            upper_body_only=upper_body_only,
+            model_complexity=model_complexity,
             smooth_landmarks=True,
             min_detection_confidence=0.5,
             min_tracking_confidence=0.5)
@@ -475,7 +463,7 @@ class MediaPipeHolistic:
                 'keypt'   : np.zeros((21,2)), # 2D keypt in image coordinate (pixel)
                 'joint'   : np.zeros((21,3)), # 3D joint in relative coordinate
                 'joint_3d': np.zeros((21,3)), # 3D joint in camera coordinate (m)
-                'class'   : None,             # Left / none hand
+                'class'   : None,             # Left / right / none hand
                 'score'   : 0,                # Probability of predicted handedness (always>0.5, and opposite handedness=1-score)
                 'angle'   : np.zeros(15),     # Flexion joint angles in degree
                 'gesture' : None,             # Type of hand gesture
@@ -485,26 +473,20 @@ class MediaPipeHolistic:
                 'keypt'   : np.zeros((21,2)), # 2D keypt in image coordinate (pixel)
                 'joint'   : np.zeros((21,3)), # 3D joint in relative coordinate
                 'joint_3d': np.zeros((21,3)), # 3D joint in camera coordinate (m)
-                'class'   : None,             # Left / none hand
+                'class'   : None,             # Left / right / none hand
                 'score'   : 0,                # Probability of predicted handedness (always>0.5, and opposite handedness=1-score)
                 'angle'   : np.zeros(15),     # Flexion joint angles in degree
                 'gesture' : None,             # Type of hand gesture
                 'fps'     : -1, # Frame per sec
             }
 
-        if upper_body_only:
-            num_landmark = 25
-        else:
-            num_landmark = 33            
-
         # Define body parameter
         self.param_bd = {
                 'detect'  : False, # Boolean to indicate whether a person is detected
-                'keypt'   : np.zeros((num_landmark,2)), # 2D keypt in image coordinate (pixel)
-                'joint'   : np.zeros((num_landmark,3)), # 3D joint in relative coordinate
-                'joint_3d': np.zeros((num_landmark,3)), # 3D joint in camera coordinate (m)
-                'visible' : np.zeros(num_landmark),     # Visibility: Likelihood [0,1] of being visible (present and not occluded) in the image
-                # 'presence': np.zeros(num_landmark), # Presence: Likelihood [0,1] of being present in the image or if its located outside the image
+                'keypt'   : np.zeros((33,2)), # 2D keypt in image coordinate (pixel)
+                'joint'   : np.zeros((33,3)), # 3D joint in relative coordinate
+                'joint_3d': np.zeros((33,3)), # 3D joint in camera coordinate (m)
+                'visible' : np.zeros(33),     # Visibility: Likelihood [0,1] of being visible (present and not occluded) in the image
                 'fps'     : -1, # Frame per sec
             }
 
@@ -595,10 +577,9 @@ class MediaPipeHolistic:
 
                 self.param_bd['joint'][j,0] = lm.x
                 self.param_bd['joint'][j,1] = lm.y
-                self.param_bd['joint'][j,2] = lm.z # Note: As of version 0.8.3, z is predicted only in full-body mode, and should be discarded when upper_body_only is true
+                self.param_bd['joint'][j,2] = lm.z
 
                 self.param_bd['visible'][j] = lm.visibility
-                # self.param_bd['presence'][j] = lm.presence # Seems to be removed in version 0.8.3
 
             # Convert relative 3D joint to actual 3D joint in camera coordinate
             self.convert_relative_to_actual_3d_joint(
@@ -648,7 +629,7 @@ class MediaPipeHolistic:
             param_fc['joint_3d'] = param_fc['joint'].copy()
             
             # Scale from relative to actual 3D joint in m
-            D = 0.07 # Note: Hardcode actual dist btw left and right eye as 7cm
+            D = 0.07 # Note: Hardcode actual dist btw left and right eye as 0.07 m
             d = np.linalg.norm(param_fc['joint_3d'][386] - param_fc['joint_3d'][159]) # Dist btw left and right eye (in relative 3D coor)
             param_fc['joint_3d'] *= D/d
 
@@ -662,7 +643,7 @@ class MediaPipeHolistic:
             param_lh['joint_3d'][:,2] = param_lh['joint'][:,2]*intrin['width']
 
             # Scale from relative to actual 3D joint in m
-            D = 0.08 # Note: Hardcode actual dist btw wrist and index finger MCP as 8cm
+            D = 0.08 # Note: Hardcode actual dist btw wrist and index finger MCP as 0.08 m
             d = np.linalg.norm(param_lh['joint_3d'][0] - param_lh['joint_3d'][9]) # Dist btw wrist and index finger MCP joint
             param_lh['joint_3d'] *= D/d
 
@@ -676,7 +657,7 @@ class MediaPipeHolistic:
             param_rh['joint_3d'][:,2] = param_rh['joint'][:,2]*intrin['width']
             
             # Scale from relative to actual 3D joint in m
-            D = 0.08 # Note: Hardcode actual dist btw wrist and index finger MCP as 8cm
+            D = 0.08 # Note: Hardcode actual dist btw wrist and index finger MCP as 0.08 m
             d = np.linalg.norm(param_rh['joint_3d'][0] - param_rh['joint_3d'][9]) # Dist btw wrist and index finger MCP joint
             param_rh['joint_3d'] *= D/d
 

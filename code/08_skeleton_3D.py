@@ -44,12 +44,12 @@ if mode=='hand':
     disp = DisplayHand(draw3d=True, draw_camera=True, max_num_hands=2, intrin=intrin)
 elif mode=='body':
     # Note: As of version 0.8.3 3D joint estimation is only available in full body mode
-    pipe = MediaPipeBody(static_image_mode=False, upper_body_only=False, intrin=intrin)
-    disp = DisplayBody(draw3d=True, draw_camera=True, upper_body_only=False, intrin=intrin)
+    pipe = MediaPipeBody(static_image_mode=False, model_complexity=1, intrin=intrin)
+    disp = DisplayBody(draw3d=True, draw_camera=True, intrin=intrin)
 elif mode=='holistic':
     # Note: As of version 0.8.3 3D joint estimation is only available in full body mode
-    pipe = MediaPipeHolistic(static_image_mode=False, upper_body_only=False, intrin=intrin)
-    disp = DisplayHolistic(draw3d=True, draw_camera=True, upper_body_only=False, intrin=intrin)
+    pipe = MediaPipeHolistic(static_image_mode=False, model_complexity=1, intrin=intrin)
+    disp = DisplayHolistic(draw3d=True, draw_camera=True, intrin=intrin)
 
 prev_time = time.time()
 while cap.isOpened():

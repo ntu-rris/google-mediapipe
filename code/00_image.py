@@ -33,12 +33,12 @@ elif mode=='hand':
     disp = DisplayHand(draw3d=True, max_num_hands=1)
     file = '../data/sample/hand.png'
 elif mode=='body':
-    pipe = MediaPipeBody(static_image_mode=True, upper_body_only=True)
-    disp = DisplayBody(draw3d=True, upper_body_only=True)
+    pipe = MediaPipeBody(static_image_mode=True, model_complexity=1)
+    disp = DisplayBody(draw3d=True)
     file = '../data/sample/upper_limb4.png'
 elif mode=='holistic':
-    pipe = MediaPipeHolistic(static_image_mode=True, upper_body_only=False)
-    disp = DisplayHolistic(draw3d=True, upper_body_only=False)
+    pipe = MediaPipeHolistic(static_image_mode=True, model_complexity=1)
+    disp = DisplayHolistic(draw3d=True)
     file = '../data/sample/lower_limb4.png'
 else:
     print('Undefined mode only the following modes are available: \nface / hand / body / holistic')
