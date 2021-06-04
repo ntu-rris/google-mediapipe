@@ -20,7 +20,7 @@ Attractiveness of Google MediaPipe as compared to other SOTA (e.g. [FrankMocap](
 * **ML Solutions**: Apart from face, hand, body and object pose estimations, MediaPipe offers an array of machine learning applications refer to their [github](https://github.com/google/mediapipe) for more details
 
 ## Features
-Latest [MediaPipe Python API version 0.8.4.2](https://pypi.org/project/mediapipe/) (Released 11 May 2021) features:
+Latest [MediaPipe Python API version 0.8.5](https://pypi.org/project/mediapipe/) (Released 4 Jun 2021) features:
 
 **Face Mesh** (468 **3D** face landmarks)
 
@@ -30,7 +30,7 @@ Latest [MediaPipe Python API version 0.8.4.2](https://pypi.org/project/mediapipe
 
 * [**Blog**](https://ai.googleblog.com/2019/08/on-device-real-time-hand-tracking-with.html) | [**Code**](https://google.github.io/mediapipe/solutions/hands) | [**Paper**](https://arxiv.org/abs/2006.10214) |  [**Video**](https://www.youtube.com/watch?v=I-UOrvxxXEk) | [**Model Card**](https://drive.google.com/file/d/1yiPfkhb4hSbXJZaSq9vDmhz24XVZmxpL/view)
 
-**Body Pose** (33 **3D** landmarks for whole body, **3 levels of model complexity (NEW)**)
+**Body Pose** (33 **3D** landmarks for whole body, 3 levels of model complexity)
 
 * [**Blog**](https://ai.googleblog.com/2020/08/on-device-real-time-body-pose-tracking.html) | [**Code**](https://google.github.io/mediapipe/solutions/pose) | [**Paper**](https://arxiv.org/abs/2006.10204) |  [**Video**](https://www.youtube.com/watch?v=YPpUOTRn5tA&feature=emb_logo) | [**Model Card**](https://drive.google.com/file/d/1zhYyUXhQrb_Gp0lKUFv1ADT3OCxGEQHS/view)
 
@@ -41,6 +41,10 @@ Latest [MediaPipe Python API version 0.8.4.2](https://pypi.org/project/mediapipe
 **Objectron (3D object detection and tracking)** (4 possible objects: Shoe / Chair / Camera / Cup)
 
 * [**Blog**](https://ai.googleblog.com/2020/03/real-time-3d-object-detection-on-mobile.html) | [**Code**](https://google.github.io/mediapipe/solutions/objectron) | [**Paper**](https://arxiv.org/abs/2003.03522) | [**Paper**](https://drive.google.com/file/d/1O_zHmlgXIzAdKljp20U_JUkEHOGG52R8/view) | [**Model Card**](https://drive.google.com/file/d/1CMhN7Npdq0Dt2j0_z69mai2-m7oUTRKF/view)
+
+**Selfie Segmentation** (Segments human for selfie effect/video conferencing) **(NEW)**
+
+* [**Blog**](https://ai.googleblog.com/2020/10/background-features-in-google-meet.html) | [**Code**](https://google.github.io/mediapipe/solutions/selfie_segmentation) | [**Model Card**](https://drive.google.com/file/d/1dCfozqknMa068vVsO2j_1FgZkW_e3VWv/preview)
 
 Note: The above videos are presented at [CVPR 2020 Fourth Workshop on Computer Vision for AR/VR](https://xr.cornell.edu/workshop/2020/papers), interested reader can refer to the link for other related works.
 
@@ -65,9 +69,9 @@ conda activate mp
 | ---------------- | ----------------------------- | --------- | ------------------------------ |
 | ![](doc/04_hand_rom.gif) | ![](doc/05_wrist_rom.gif)| ![](doc/06_face_mask.gif) | ![](doc/07_triangulate.gif) |
 
-| 3D Skeleton | 3D Object Detection |
-| ----------- | ------------------- |
-| ![](doc/08_skeleton_3D.gif) | ![](doc/09_objectron.gif)|
+| 3D Skeleton | 3D Object Detection | Selfie Segmentation |
+| ----------- | ------------------- | ------------------- |
+| ![](doc/08_skeleton_3D.gif) | ![](doc/09_objectron.gif)| ![](doc/10_segmentation.gif)|
 
 <!-- [![](https://img.youtube.com/vi/rqFp-ZH5tpo/1.jpg)](https://www.youtube.com/watch?v=rqFp-ZH5tpo) --> 
 
@@ -189,6 +193,17 @@ python 09_objectron.py --mode chair
 python 09_objectron.py --mode cup
 python 09_objectron.py --mode camera
 ```
+
+
+### [10. Selfie Segmentation](code/10_segmentation.py)
+
+2 modes are available. The landscape mode has fewer FLOPS than the general model and may run faster. The selfie segmentation works best for selfie effects and video conferencing, where the person is close (< 2m) to the camera.
+
+```
+python 10_segmentation.py --mode general
+python 10_segmentation.py --mode landscape
+```
+
 
 ## Limitations:
 Estimating 3D pose from a single 2D image is an ill-posed problem and extremely challenging, thus the measurement of ROM may not be accurate!

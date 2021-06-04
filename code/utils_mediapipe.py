@@ -1,5 +1,6 @@
 ###############################################################################
-### Wrapper for Google MediaPipe face, hand, body, holistic and object pose estimation
+### Wrapper for Google MediaPipe face, hand, body, holistic, object pose estimation
+### and selfie segmentation
 ### https://github.com/google/mediapipe
 ###############################################################################
 
@@ -818,3 +819,47 @@ class MediaPipeObjectron:
         param = self.result_to_param(result, img)
 
         return param
+
+
+class MediaPipeSeg:
+    def __init__(self, model_selection=0):
+        # Access MediaPipe Solutions Python API
+        mp_seg = mp.solutions.selfie_segmentation
+
+        # Initialize MediaPipe Selfie Segmentation
+        # model_selection:
+        #   An integer index 0 or 1. 
+        #   Use 0 to select the general model
+        #   Use 1 to select the landscape model 
+        
+        self.pipe = mp_seg.SelfieSegmentation(
+            model_selection=model_selection)
+
+
+    def forward(self, img):
+        # Preprocess image
+        # img = cv2.flip(img, 1) # Flip image for 3rd person view
+        # img = cv2.resize(img, None, fx=0.5, fy=0.5)
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
+        # Perform segmentation
+        img.flags.writeable = False # To improve performance, optionally mark image as not writeable to pass by reference
+        result = self.pipe.process(img)
+        img.flags.writeable = True
+
+        # Convert imput image back to original color
+        img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+
+        # Extract segmentation mask
+        msk = result.segmentation_mask # [h,w] float32 range from 0 to 1
+        msk = cv2.bilateralFilter(msk, 9, 75, 75) # Apply bilateral filter to smooth the low res mask
+        msk = np.stack((msk,) * 3, axis=-1) > 0.1 # Convert those pixel>thres to boolean
+
+        # Create background image
+        bg_img = cv2.GaussianBlur(img,(55,55),0) # Blurred input image
+        # bg_img = np.zeros(img.shape, dtype=np.uint8) # Black background
+        
+        # Overlay segmentated img on background image
+        out = np.where(msk, img, bg_img)
+
+        return out
