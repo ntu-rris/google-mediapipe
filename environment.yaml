@@ -1,20 +1,14 @@
 name: mp
 channels:
-  - open3d-admin
-  - conda-forge
   - defaults
+  - conda-forge
+  - open3d-admin
 dependencies:
-  - pip=20.2.2  
-  - python=3.7.7
-  - numpy=1.19.1
-  - pandas=1.1.4
-  - plyfile=0.7.2
-  - pyyaml=5.3.1
-  - tqdm=4.54.1
-  - matplotlib=3.3.3 
-  - open3d=0.11.2.0
+  - pip=21.1.2
+  - python=3.8.10
+  - numpy=1.20.3
   - pip:
-    - opencv-python==4.2.0.34
-    - mediapipe==0.8.5
-    - addict==2.4.0
-    - sklearn==0.0
+    - open3d==0.12.0
+    - mediapipe==0.8.6
+    - opencv-python==4.5.2.54
+    - opencv-contrib-python==4.5.2.54

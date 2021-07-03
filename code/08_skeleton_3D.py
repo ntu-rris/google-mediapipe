@@ -86,8 +86,7 @@ while cap.isOpened():
     # Display keypoint
     cv2.imshow('img 2D', disp.draw2d(img, param))
     # Display 3D
-    disp.draw3d(param,)
-    disp.draw3d_(param, img)
+    disp.draw3d(param, img)
     disp.vis.update_geometry(None)
     disp.vis.poll_events()
     disp.vis.update_renderer()    

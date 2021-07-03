@@ -12,19 +12,23 @@ import cv2
 import sys
 import argparse
 
-from utils_display import DisplayFace, DisplayHand, DisplayBody, DisplayHolistic
-from utils_mediapipe import MediaPipeFace, MediaPipeHand, MediaPipeBody, MediaPipeHolistic
+from utils_display import DisplayFaceDetect, DisplayFace, DisplayHand, DisplayBody, DisplayHolistic
+from utils_mediapipe import MediaPipeFaceDetect, MediaPipeFace, MediaPipeHand, MediaPipeBody, MediaPipeHolistic
 
 
 # User select mode
 parser = argparse.ArgumentParser()
 parser.add_argument('-m', '--mode', default='hand', 
-    help='Select mode: face / hand / body / holistic')
+    help='Select mode: face_detect / face / hand / body / holistic')
 args = parser.parse_args()
 mode = args.mode
 
 # Load mediapipe and display class
-if mode=='face':
+if mode=='face_detect':
+    pipe = MediaPipeFaceDetect(model_selection=0, max_num_faces=5)
+    disp = DisplayFaceDetect()
+    file = '../data/sample/mona.png'
+elif mode=='face':
     pipe = MediaPipeFace(static_image_mode=True, max_num_faces=1)
     disp = DisplayFace(draw3d=True)
     file = '../data/sample/mona.png'
@@ -61,14 +65,16 @@ param = pipe.forward(img)
 # Display 2D keypoint
 cv2.imshow('img 2D', disp.draw2d(img.copy(), param))
 # Display 2.5D keypoint
-cv2.imshow('img 2.5D', disp.draw2d_(img.copy(), param))
+if mode!='face_detect':
+    cv2.imshow('img 2.5D', disp.draw2d_(img.copy(), param))
 cv2.waitKey(0) # Press escape to dispay 3D view
 
 # Display 3D joint
-disp.draw3d(param)
-disp.vis.update_geometry(None)
-disp.vis.poll_events()
-disp.vis.update_renderer()
-disp.vis.run()
+if mode!='face_detect':
+    disp.draw3d(param)
+    disp.vis.update_geometry(None)
+    disp.vis.poll_events()
+    disp.vis.update_renderer()
+    disp.vis.run()
 
 pipe.pipe.close()

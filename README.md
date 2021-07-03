@@ -20,7 +20,11 @@ Attractiveness of Google MediaPipe as compared to other SOTA (e.g. [FrankMocap](
 * **ML Solutions**: Apart from face, hand, body and object pose estimations, MediaPipe offers an array of machine learning applications refer to their [github](https://github.com/google/mediapipe) for more details
 
 ## Features
-Latest [MediaPipe Python API version 0.8.5](https://pypi.org/project/mediapipe/) (Released 4 Jun 2021) features:
+Latest [MediaPipe Python API version 0.8.6](https://pypi.org/project/mediapipe/) (Released 25 Jun 2021) features:
+
+**Face Detect** (**2D** face detection)
+
+* [**Code**](https://google.github.io/mediapipe/solutions/face_detection) | [**Paper**](https://arxiv.org/abs/1907.05047) |  [**Presentation**](https://docs.google.com/presentation/d/1YCtASfnYyZtH-41QvnW5iZxELFnf0MF-pPWSLGj8yjQ/present?slide=id.g5bc8aeffdd_1_0) | [**Model Card**](https://drive.google.com/file/d/1d4-xJP9PVzOvMBDgIjz6NhvpnlG9_i0S/preview) | [**Model Card**](https://drive.google.com/file/d/1jpQt8TB1nMFQ49VSSBKdNEdQOygNRvCP/preview)
 
 **Face Mesh** (468 **3D** face landmarks)
 
@@ -30,7 +34,7 @@ Latest [MediaPipe Python API version 0.8.5](https://pypi.org/project/mediapipe/)
 
 * [**Blog**](https://ai.googleblog.com/2019/08/on-device-real-time-hand-tracking-with.html) | [**Code**](https://google.github.io/mediapipe/solutions/hands) | [**Paper**](https://arxiv.org/abs/2006.10214) |  [**Video**](https://www.youtube.com/watch?v=I-UOrvxxXEk) | [**Model Card**](https://drive.google.com/file/d/1yiPfkhb4hSbXJZaSq9vDmhz24XVZmxpL/view)
 
-**Body Pose** (33 **3D** landmarks for whole body, 3 levels of model complexity)
+**Body Pose** (33 **3D** landmarks for whole body, 3 levels of model complexity) **(NEW real-world 3D coordinates)**
 
 * [**Blog**](https://ai.googleblog.com/2020/08/on-device-real-time-body-pose-tracking.html) | [**Code**](https://google.github.io/mediapipe/solutions/pose) | [**Paper**](https://arxiv.org/abs/2006.10204) |  [**Video**](https://www.youtube.com/watch?v=YPpUOTRn5tA&feature=emb_logo) | [**Model Card**](https://drive.google.com/file/d/1zhYyUXhQrb_Gp0lKUFv1ADT3OCxGEQHS/view)
 
@@ -42,7 +46,7 @@ Latest [MediaPipe Python API version 0.8.5](https://pypi.org/project/mediapipe/)
 
 * [**Blog**](https://ai.googleblog.com/2020/03/real-time-3d-object-detection-on-mobile.html) | [**Code**](https://google.github.io/mediapipe/solutions/objectron) | [**Paper**](https://arxiv.org/abs/2003.03522) | [**Paper**](https://drive.google.com/file/d/1O_zHmlgXIzAdKljp20U_JUkEHOGG52R8/view) | [**Model Card**](https://drive.google.com/file/d/1CMhN7Npdq0Dt2j0_z69mai2-m7oUTRKF/view)
 
-**Selfie Segmentation** (Segments human for selfie effect/video conferencing) **(NEW)**
+**Selfie Segmentation** (Segments human for selfie effect/video conferencing)
 
 * [**Blog**](https://ai.googleblog.com/2020/10/background-features-in-google-meet.html) | [**Code**](https://google.github.io/mediapipe/solutions/selfie_segmentation) | [**Model Card**](https://drive.google.com/file/d/1dCfozqknMa068vVsO2j_1FgZkW_e3VWv/preview)
 
@@ -78,8 +82,9 @@ conda activate mp
 ## Usage
 ### [0. Single Image](code/00_image.py)
 
-4 different modes are available and sample images are located in [data/sample/](data/sample/) folder
+5 different modes are available and sample images are located in [data/sample/](data/sample/) folder
 ```
+python 00_image.py --mode face_detect
 python 00_image.py --mode face
 python 00_image.py --mode hand
 python 00_image.py --mode body
@@ -90,8 +95,9 @@ Note: The sample images for subject with body marker are adapted from [An Asian-
 
 ### [1. Video Input](code/01_video.py)
 
-4 different modes are available and video capture can be done online through [webcam](https://github.com/ntu-rris/google-mediapipe/blob/5e155130ba3477b84e873c57251c59f4206da3ee/code/01_video.py#L45) or offline from your own [.mp4 file](https://github.com/ntu-rris/google-mediapipe/blob/5e155130ba3477b84e873c57251c59f4206da3ee/code/01_video.py#L46)
+5 different modes are available and video capture can be done online through webcam or offline from your own .mp4 file
 ```
+python 01_video.py --mode face_detect
 python 01_video.py --mode face
 python 01_video.py --mode hand
 python 01_video.py --mode body

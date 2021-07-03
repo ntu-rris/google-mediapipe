@@ -21,6 +21,47 @@ intrin_default = {
 }
 
 
+
+class DisplayFaceDetect:
+    def __init__(self, max_num_faces=5):
+        self.max_num_faces = max_num_faces
+
+
+    def draw2d(self, img, param):
+        img_height, img_width, _ = img.shape
+
+        # Loop through different faces
+        for p in param:
+            if p['detect']:
+                # Draw bbox
+                x, y, w, h = p['bbox']
+                x, y, w, h = int(x), int(y), int(w), int(h)
+                cv2.rectangle(img, (x, y), (x+w, y+h), (0,255,0), 1)
+
+                # Label score
+                cv2.putText(img, 'Score: %.3f' % (p['score']),
+                    (x, y-10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0))
+
+                # Loop through keypoint
+                for i in range(6):
+                    x = int(p['keypt'][i,0])
+                    y = int(p['keypt'][i,1])
+                    if x>0 and y>0 and x<img_width and y<img_height:
+                        # Draw keypoint
+                        cv2.circle(img, (x, y), 3, (0,0,255), -1) # Red
+
+                        # Number keypoint
+                        # cv2.putText(img, '%d' % (i), (x, y),
+                        #     cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0))
+
+            # Label fps
+            if p['fps']>0:
+                cv2.putText(img, 'FPS: %.1f' % (p['fps']),
+                    (0, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 2)
+
+        return img
+
+
 class DisplayFace:
     def __init__(self, draw3d=False, intrin=None, max_num_faces=1, vis=None):
         self.max_num_faces = max_num_faces
@@ -146,16 +187,6 @@ class DisplayFace:
         for i in range(self.max_num_faces):
             if param[i]['detect']:
                 self.mesh.vertices = o3d.utility.Vector3dVector(param[i]['joint'])
-            else:
-                self.mesh.vertices = o3d.utility.Vector3dVector(np.zeros((self.nPt,3)))
-
-
-    def draw3d_(self, param):
-        # Different from draw3d
-        # draw3d_ draw the actual 3d joint in camera coordinate
-        for i in range(self.max_num_faces):
-            if param[i]['detect']:
-                self.mesh.vertices = o3d.utility.Vector3dVector(param[i]['joint_3d'])
             else:
                 self.mesh.vertices = o3d.utility.Vector3dVector(np.zeros((self.nPt,3)))
 
@@ -338,7 +369,7 @@ class DisplayHand:
             ctr = self.vis.get_view_control()
             ctr.set_up([0,-1,0]) # Set up as -y axis
             ctr.set_front([0,0,-1]) # Set to looking towards -z axis
-            ctr.set_lookat([0.5,0.5,0]) # Set to center of view
+            ctr.set_lookat([0,0,0]) # Set to center of view
             ctr.set_zoom(1)
             
             if draw_camera:
@@ -467,7 +498,7 @@ class DisplayHand:
         return img
 
 
-    def draw3d(self, param):
+    def draw3d(self, param, img=None):
         for i in range(self.max_num_hands):
             if param[i]['class'] is None:
                 self.pcd[i].points = o3d.utility.Vector3dVector(np.zeros((21,3)))
@@ -475,18 +506,6 @@ class DisplayHand:
             else:
                 self.pcd[i].points = o3d.utility.Vector3dVector(param[i]['joint'])
                 self.bone[i].points = o3d.utility.Vector3dVector(param[i]['joint'])
-
-
-    def draw3d_(self, param, img=None):
-        # Different from draw3d
-        # draw3d_ draw the actual 3d joint in camera coordinate
-        for i in range(self.max_num_hands):
-            if param[i]['class'] is None:
-                self.pcd[i].points = o3d.utility.Vector3dVector(np.zeros((21,3)))
-                self.bone[i].points = o3d.utility.Vector3dVector(np.zeros((21,3)))
-            else:
-                self.pcd[i].points = o3d.utility.Vector3dVector(param[i]['joint_3d'])
-                self.bone[i].points = o3d.utility.Vector3dVector(param[i]['joint_3d'])
 
         if img is not None:
             img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
@@ -715,8 +734,8 @@ class DisplayBody:
             ctr = self.vis.get_view_control()
             ctr.set_up([0,-1,0]) # Set up as -y axis
             ctr.set_front([0,0,-1]) # Set to looking towards -z axis
-            ctr.set_lookat([0.5,0.5,0]) # Set to center of view
-            ctr.set_zoom(1)
+            ctr.set_lookat([0,0,0]) # Set to center of view
+            ctr.set_zoom(1.5)
 
             if draw_camera:
                 # Draw camera frustum
@@ -775,7 +794,7 @@ class DisplayBody:
 
         img_height, img_width, _ = img.shape
 
-        # Loop through different hands
+        # Loop through different body
         p = param
         if p['detect']:
             min_depth = min(p['joint'][:,2])
@@ -809,23 +828,10 @@ class DisplayBody:
         return img
 
 
-    def draw3d(self, param):
+    def draw3d(self, param, img=None):
         if param['detect']:
             self.pcd.points = o3d.utility.Vector3dVector(param['joint'])
             self.bone.points = o3d.utility.Vector3dVector(param['joint'])
-        else:
-            self.pcd.points = o3d.utility.Vector3dVector(np.zeros((33,3)))
-            self.bone.points = o3d.utility.Vector3dVector(np.zeros((33,3)))
-
-
-    def draw3d_(self, param, img=None):
-        # Different from draw3d
-        # draw3d_ draw the actual 3d joint in camera coordinate
-        if param['detect']:
-            # Translate all joint_3d forward by 1 m
-            param['joint_3d'][:,2] += 1.0             
-            self.pcd.points = o3d.utility.Vector3dVector(param['joint_3d'])
-            self.bone.points = o3d.utility.Vector3dVector(param['joint_3d'])
         else:
             self.pcd.points = o3d.utility.Vector3dVector(np.zeros((33,3)))
             self.bone.points = o3d.utility.Vector3dVector(np.zeros((33,3)))
@@ -895,30 +901,21 @@ class DisplayHolistic:
         return img
 
 
-    def draw3d(self, param):
+    def draw3d(self, param, img=None):
         param_fc, param_lh, param_rh, param_bd = param
+
+        # Note: Collapse body face joint as there is full face mesh
+        if param_fc['detect']:
+            param_bd['joint'][[0,1,2,3,4,5,6,7,8,9,10]] = np.zeros(3)
+        # Note: Collapse body hand joint as there is full hand joint from hand
+        if param_lh['class'] is not None:
+            param_bd['joint'][[17,19,21]] = param_bd['joint'][15] # Left wrist joint
+        if param_rh['class'] is not None:
+            param_bd['joint'][[18,20,22]] = param_bd['joint'][16] # Right wrist joint
+
         self.disp_face.draw3d([param_fc])
         self.disp_hand.draw3d([param_lh, param_rh])
         self.disp_body.draw3d(param_bd)
-
-
-    def draw3d_(self, param, img):
-        # Different from draw3d
-        # draw3d_ draw the actual 3d joint in camera coordinate
-        param_fc, param_lh, param_rh, param_bd = param
-        # Note: Collapse body hand joint as there is full hand joint from hand
-        param_bd['joint_3d'][[17,19,21]] = param_bd['joint_3d'][15]
-        param_bd['joint_3d'][[18,20,22]] = param_bd['joint_3d'][16]
-        # Note: Collapse body face joint as there is full face mesh
-        param_bd['joint_3d'][[0,1,2,3,4,5,6,7,8,9,10]] = np.zeros(3)
-        # Translate all joint_3d forward by 1 m
-        param_fc['joint_3d'][:,2] += 1.0 
-        param_lh['joint_3d'][:,2] += 1.0 
-        param_rh['joint_3d'][:,2] += 1.0 
-        # param_bd['joint_3d'][:,2] += 1.0 
-        self.disp_face.draw3d_([param_fc])
-        self.disp_hand.draw3d_([param_lh, param_rh])
-        self.disp_body.draw3d_(param_bd)
 
         if img is not None:
             img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)

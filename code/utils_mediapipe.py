@@ -22,6 +22,81 @@ intrin_default = {
 }
 
 
+class MediaPipeFaceDetect:
+    def __init__(self, model_selection=1, max_num_faces=5):
+        # Access MediaPipe Solutions Python API
+        mp_face_detect = mp.solutions.face_detection
+
+        # Initialize MediaPipe FaceDetection
+        # model_selection:
+        #   An integer index 0 or 1
+        #   Use 0 for short-range model that works best for faces within 2 meters from the camera
+        #   Use 1 for a full-range model best for faces within 5 meters from the camera
+
+        # min_detection_confidence:
+        #   Confidence value [0,1] from face detection model
+        #   for detection to be considered successful
+
+        self.pipe = mp_face_detect.FaceDetection(
+            model_selection=0,
+            min_detection_confidence=0.5)
+
+        # Define face parameter
+        self.param = []
+        for i in range(max_num_faces):
+            p = {
+                'detect': False,           # Boolean to indicate whether a face is detected
+                'score' : 0,               # Probability of detection
+                'bbox'  : (0,0,0,0),       # Bounding box (xmin,ymin,width,height) (pixel)
+                'keypt' : np.zeros((6,2)), # 2D keypt in image coordinate (pixel)
+                'fps'   : -1,              # Frame per sec
+            }
+            self.param.append(p)
+
+
+    def result_to_param(self, result, img):
+        # Convert mediapipe result to my own param
+        img_height, img_width, _ = img.shape
+
+        # Reset param
+        for p in self.param:
+            p['detect'] = False
+
+        if result.detections is not None:
+            # Loop through different faces
+            for i, res in enumerate(result.detections):
+                self.param[i]['detect'] = True
+                self.param[i]['score']  = res.score[0]
+
+                # Get bbox parameter
+                xmin   = res.location_data.relative_bounding_box.xmin  * img_width  # Convert normalized coor to pixel [0,1] -> [0,width]
+                ymin   = res.location_data.relative_bounding_box.ymin  * img_height # Convert normalized coor to pixel [0,1] -> [0,height]
+                width  = res.location_data.relative_bounding_box.width * img_width  # Convert normalized coor to pixel [0,1] -> [0,width]
+                height = res.location_data.relative_bounding_box.height* img_height # Convert normalized coor to pixel [0,1] -> [0,height]
+                self.param[i]['bbox'] = (xmin, ymin, width, height)
+
+                # Loop through 6 landmarks for each face
+                # Right eye, left eye, nose, mouth, right ear, left ear
+                for j, lm in enumerate(res.location_data.relative_keypoints):
+                    self.param[i]['keypt'][j,0] = lm.x * img_width  # Convert normalized coor to pixel [0,1] -> [0,width]
+                    self.param[i]['keypt'][j,1] = lm.y * img_height # Convert normalized coor to pixel [0,1] -> [0,height]
+
+        return self.param
+
+
+    def forward(self, img):
+        # Preprocess image
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
+        # Extract result
+        result = self.pipe.process(img)
+
+        # Convert result to my own param
+        param = self.result_to_param(result, img)
+
+        return param
+
+
 class MediaPipeFace:
     def __init__(self, static_image_mode=True, max_num_faces=1):
         # Access MediaPipe Solutions Python API
@@ -149,8 +224,7 @@ class MediaPipeHand:
         for i in range(max_num_hands):
             p = {
                 'keypt'   : np.zeros((21,2)), # 2D keypt in image coordinate (pixel)
-                'joint'   : np.zeros((21,3)), # 3D joint in relative coordinate
-                'joint_3d': np.zeros((21,3)), # 3D joint in camera coordinate (m)
+                'joint'   : np.zeros((21,3)), # 3D joint in camera coordinate (m)
                 'class'   : None,             # Left / right / none hand
                 'score'   : 0,                # Probability of predicted handedness (always>0.5, and opposite handedness=1-score)
                 'angle'   : np.zeros(15),     # Flexion joint angles in degree
@@ -195,14 +269,14 @@ class MediaPipeHand:
                     # self.param[i]['presence'][j] = lm.presence
 
                 # Convert relative 3D joint to angle
-                self.param[i]['angle'] = self.convert_3d_joint_to_angle(self.param[i]['joint'])
-                # Convert relative 3D joint to actual 3D joint in camera coordinate
-                self.convert_relative_to_actual_3d_joint(self.param[i], self.intrin)
+                self.param[i]['angle'] = self.convert_joint_to_angle(self.param[i]['joint'])
+                # Convert relative 3D joint to camera coordinate
+                self.convert_joint_to_camera_coor(self.param[i], self.intrin)
 
         return self.param
 
     
-    def convert_3d_joint_to_angle(self, joint):
+    def convert_joint_to_angle(self, joint):
         # Get direction vector of bone from parent to child
         v1 = joint[[0,1,2,3,0,5,6,7,0,9,10,11,0,13,14,15,0,17,18,19],:] # Parent joint
         v2 = joint[[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20],:] # Child joint
@@ -218,7 +292,7 @@ class MediaPipeHand:
         return np.degrees(angle) # Convert radian to degree
 
 
-    def convert_relative_to_actual_3d_joint(self, param, intrin):
+    def convert_joint_to_camera_coor(self, param, intrin):
         # Note: MediaPipe hand model uses weak perspective (scaled orthographic) projection
         # https://github.com/google/mediapipe/issues/742#issuecomment-639104199
 
@@ -249,9 +323,9 @@ class MediaPipeHand:
         # https://google.github.io/mediapipe/solutions/pose.html#pose_landmarks
         
         # De-normalized 3D hand joint
-        param['joint_3d'][:,0] = param['joint'][:,0]*intrin['width'] -intrin['cx']
-        param['joint_3d'][:,1] = param['joint'][:,1]*intrin['height']-intrin['cy']
-        param['joint_3d'][:,2] = param['joint'][:,2]*intrin['width']
+        param['joint'][:,0] = param['joint'][:,0]*intrin['width'] -intrin['cx']
+        param['joint'][:,1] = param['joint'][:,1]*intrin['height']-intrin['cy']
+        param['joint'][:,2] = param['joint'][:,2]*intrin['width']
 
         # Assume average depth is fixed at 0.6 m (works best when the hand is around 0.5 to 0.7 m from camera)
         Zavg = 0.6
@@ -260,7 +334,7 @@ class MediaPipeHand:
         # Compute scaling factor S
         S = favg/Zavg
         # Uniform scaling
-        param['joint_3d'] /= S
+        param['joint'] /= S
 
         # Estimate wrist depth using similar triangle
         D = 0.08 # Note: Hardcode actual dist btw wrist and index finger MCP as 0.08 m
@@ -269,7 +343,7 @@ class MediaPipeHand:
         # d/f = D/Z -> Z = D/d*f
         Zwrist = D/d*favg
         # Add wrist depth to all joints
-        param['joint_3d'][:,2] += Zwrist      
+        param['joint'][:,2] += Zwrist
 
 
     def forward(self, img):
@@ -334,8 +408,7 @@ class MediaPipeBody:
         self.param = {
                 'detect'  : False, # Boolean to indicate whether a person is detected
                 'keypt'   : np.zeros((33,2)), # 2D keypt in image coordinate (pixel)
-                'joint'   : np.zeros((33,3)), # 3D joint in relative coordinate
-                'joint_3d': np.zeros((33,3)), # 3D joint in camera coordinate (m)
+                'joint'   : np.zeros((33,3)), # 3D joint in real world coordinate (m)
                 'visible' : np.zeros(33),     # Visibility: Likelihood [0,1] of being visible (present and not occluded) in the image
                 'fps'     : -1, # Frame per sec
             }
@@ -354,42 +427,17 @@ class MediaPipeBody:
             for j, lm in enumerate(result.pose_landmarks.landmark):
                 self.param['keypt'][j,0] = lm.x * img_width  # Convert normalized coor to pixel [0,1] -> [0,width]
                 self.param['keypt'][j,1] = lm.y * img_height # Convert normalized coor to pixel [0,1] -> [0,height]
+                # Note: lm.z is ignored refer to pose_world_landmarks for 3D coordinated
 
+                self.param['visible'][j] = lm.visibility
+
+            # Loop through estimated real world 3D coordinates in meters origin at center between hips
+            for j, lm in enumerate(result.pose_world_landmarks.landmark):
                 self.param['joint'][j,0] = lm.x
                 self.param['joint'][j,1] = lm.y
                 self.param['joint'][j,2] = lm.z
 
-                self.param['visible'][j] = lm.visibility
-
-            # Convert relative 3D joint to actual 3D joint in m
-            self.convert_relative_to_actual_3d_joint(self.param, self.intrin)
-
         return self.param
-
-
-    def convert_relative_to_actual_3d_joint(self, param, intrin):
-        # De-normalized 3D body joint
-        param['joint_3d'][:,0] = param['joint'][:,0]*intrin['width'] -intrin['cx']
-        param['joint_3d'][:,1] = param['joint'][:,1]*intrin['height']-intrin['cy']
-        param['joint_3d'][:,2] = param['joint'][:,2]*intrin['width'] * 0.25
-        # Note: Seems like need to further scale down z by 0.25 else will get elongated forearm and feet
-        # Could it be beacuse z ranges btw a smaller range of -ve XX to +ve XX unlike x and y which range from 0 to 1
-
-        # Compute center of shoulder and hip joint
-        center_shoulder = (param['joint_3d'][11] + param['joint_3d'][12])*0.5
-        center_hip      = (param['joint_3d'][23] + param['joint_3d'][24])*0.5
-
-        # Translate to new origin at center of hip
-        param['joint_3d'] -= center_hip
-
-        # Scale from relative to actual 3D joint in m
-        D = 0.55 # Note: Hardcode actual dist btw shoulder and hip joint as 0.55 m
-        d = np.linalg.norm(center_shoulder - center_hip) # Dist btw shoulder and hip joint (in relative 3D coor)
-        param['joint_3d'] *= D/d
-
-        # Note: Unlike hand where the Zavg is relatively constant around 0.6 m, 
-        # it is quite hard to define Zavg for body, 
-        # thus the step to convert to camera coor is ignored
 
 
     def forward(self, img):
@@ -454,16 +502,14 @@ class MediaPipeHolistic:
         self.param_fc = {
                 'detect'  : False, # Boolean to indicate whether a face is detected
                 'keypt'   : np.zeros((468,2)), # 2D keypt in image coordinate (pixel)
-                'joint'   : np.zeros((468,3)), # 3D joint in relative coordinate
-                'joint_3d': np.zeros((468,3)), # 3D joint in camera coordinate (m)
+                'joint'   : np.zeros((468,3)), # 3D joint in camera coordinate (m)
                 'fps'     : -1, # Frame per sec
             }
 
         # Define left and right hand parameter
         self.param_lh = {
                 'keypt'   : np.zeros((21,2)), # 2D keypt in image coordinate (pixel)
-                'joint'   : np.zeros((21,3)), # 3D joint in relative coordinate
-                'joint_3d': np.zeros((21,3)), # 3D joint in camera coordinate (m)
+                'joint'   : np.zeros((21,3)), # 3D joint in camera coordinate (m)
                 'class'   : None,             # Left / right / none hand
                 'score'   : 0,                # Probability of predicted handedness (always>0.5, and opposite handedness=1-score)
                 'angle'   : np.zeros(15),     # Flexion joint angles in degree
@@ -472,8 +518,7 @@ class MediaPipeHolistic:
             }
         self.param_rh = {
                 'keypt'   : np.zeros((21,2)), # 2D keypt in image coordinate (pixel)
-                'joint'   : np.zeros((21,3)), # 3D joint in relative coordinate
-                'joint_3d': np.zeros((21,3)), # 3D joint in camera coordinate (m)
+                'joint'   : np.zeros((21,3)), # 3D joint in camera coordinate (m)
                 'class'   : None,             # Left / right / none hand
                 'score'   : 0,                # Probability of predicted handedness (always>0.5, and opposite handedness=1-score)
                 'angle'   : np.zeros(15),     # Flexion joint angles in degree
@@ -485,8 +530,7 @@ class MediaPipeHolistic:
         self.param_bd = {
                 'detect'  : False, # Boolean to indicate whether a person is detected
                 'keypt'   : np.zeros((33,2)), # 2D keypt in image coordinate (pixel)
-                'joint'   : np.zeros((33,3)), # 3D joint in relative coordinate
-                'joint_3d': np.zeros((33,3)), # 3D joint in camera coordinate (m)
+                'joint'   : np.zeros((33,3)), # 3D joint in real world coordinate (m)
                 'visible' : np.zeros(33),     # Visibility: Likelihood [0,1] of being visible (present and not occluded) in the image
                 'fps'     : -1, # Frame per sec
             }
@@ -513,6 +557,14 @@ class MediaPipeHolistic:
                 self.param_fc['joint'][j,1] = lm.y
                 self.param_fc['joint'][j,2] = lm.z
 
+            # Scale face vert to meter
+            D = 0.07 # Note: Hardcode actual dist btw left and right eye as 0.07 m
+            d = np.linalg.norm(self.param_fc['joint'][386] - self.param_fc['joint'][159]) # Dist btw left and right eye (in relative 3D coor)
+            self.param_fc['joint'] *= D/d
+
+            # Translate face nose joint to origin
+            self.param_fc['joint'] -= self.param_fc['joint'][4] # Nose joint
+
         #################
         ### Left Hand ###
         #################
@@ -531,12 +583,10 @@ class MediaPipeHolistic:
                 self.param_lh['joint'][j,1] = lm.y
                 self.param_lh['joint'][j,2] = lm.z
 
-                # Ignore it https://github.com/google/mediapipe/issues/1320
-                # self.param_lh['visible'][j] = lm.visibility
-                # self.param_lh['presence'][j] = lm.presence
-
             # Convert relative 3D joint to angle
-            self.param_lh['angle'] = self.convert_3d_joint_to_angle(self.param_lh['joint'])
+            self.param_lh['angle'] = self.convert_joint_to_angle(self.param_lh['joint'])
+            # Convert relative 3D joint to camera coordinate
+            self.convert_joint_to_camera_coor(self.param_lh, self.intrin)
 
         ##################
         ### Right Hand ###
@@ -556,12 +606,10 @@ class MediaPipeHolistic:
                 self.param_rh['joint'][j,1] = lm.y
                 self.param_rh['joint'][j,2] = lm.z
 
-                # Ignore it https://github.com/google/mediapipe/issues/1320
-                # self.param_rh['visible'][j] = lm.visibility
-                # self.param_rh['presence'][j] = lm.presence
-
             # Convert relative 3D joint to angle
-            self.param_rh['angle'] = self.convert_3d_joint_to_angle(self.param_rh['joint'])
+            self.param_rh['angle'] = self.convert_joint_to_angle(self.param_rh['joint'])
+            # Convert relative 3D joint to camera coordinate
+            self.convert_joint_to_camera_coor(self.param_rh, self.intrin)
 
         ############
         ### Pose ###
@@ -576,20 +624,26 @@ class MediaPipeHolistic:
                 self.param_bd['keypt'][j,0] = lm.x * img_width  # Convert normalized coor to pixel [0,1] -> [0,width]
                 self.param_bd['keypt'][j,1] = lm.y * img_height # Convert normalized coor to pixel [0,1] -> [0,height]
 
+                self.param_bd['visible'][j] = lm.visibility
+
+            # Loop through estimated real world 3D coordinates in meters origin at center between hips
+            for j, lm in enumerate(result.pose_world_landmarks.landmark):
                 self.param_bd['joint'][j,0] = lm.x
                 self.param_bd['joint'][j,1] = lm.y
                 self.param_bd['joint'][j,2] = lm.z
 
-                self.param_bd['visible'][j] = lm.visibility
+            # Translate to face nose joint to body nose joint
+            self.param_fc['joint'] += self.param_bd['joint'][0] # Nose joint
 
-            # Convert relative 3D joint to actual 3D joint in camera coordinate
-            self.convert_relative_to_actual_3d_joint(
-                self.param_fc, self.param_lh, self.param_rh, self.param_bd, self.intrin)
+            # Translate to hand wrist to body wrist joint
+            self.param_lh['joint'] += self.param_bd['joint'][15] # Left wrist joint
+            self.param_rh['joint'] += self.param_bd['joint'][16] # Right wrist joint
+
 
         return (self.param_fc, self.param_lh, self.param_rh, self.param_bd)
 
     
-    def convert_3d_joint_to_angle(self, joint):
+    def convert_joint_to_angle(self, joint):
         # Get direction vector of bone from parent to child
         v1 = joint[[0,1,2,3,0,5,6,7,0,9,10,11,0,13,14,15,0,17,18,19],:] # Parent joint
         v2 = joint[[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20],:] # Child joint
@@ -605,65 +659,19 @@ class MediaPipeHolistic:
         return np.degrees(angle) # Convert radian to degree
 
 
-    def convert_relative_to_actual_3d_joint(self, param_fc, param_lh, param_rh, param_bd, intrin):
-        if param_bd['detect']:
-            # De-normalized 3D body joint
-            param_bd['joint_3d'][:,0] = param_bd['joint'][:,0]*intrin['width'] -intrin['cx']
-            param_bd['joint_3d'][:,1] = param_bd['joint'][:,1]*intrin['height']-intrin['cy']
-            param_bd['joint_3d'][:,2] = param_bd['joint'][:,2]*intrin['width'] * 0.25
-            # Note: Seems like need to further scale down z by 0.25 else will get elongated forearm and feet
-            # Could it be beacuse z ranges btw a smaller range of -ve XX to +ve XX unlike x and y which range from 0 to 1
+    def convert_joint_to_camera_coor(self, param, intrin):
+        # De-normalized 3D hand joint
+        param['joint'][:,0] = param['joint'][:,0]*intrin['width']
+        param['joint'][:,1] = param['joint'][:,1]*intrin['height']
+        param['joint'][:,2] = param['joint'][:,2]*intrin['width']
 
-            # Compute center of shoulder and hip joint
-            center_shoulder = (param_bd['joint_3d'][11] + param_bd['joint_3d'][12])*0.5
-            center_hip      = (param_bd['joint_3d'][23] + param_bd['joint_3d'][24])*0.5
+        # Scale hand joint to meter
+        D = 0.08 # Note: Hardcode actual dist btw wrist and index finger MCP as 0.08 m
+        d = np.linalg.norm(param['joint'][0] - param['joint'][9]) # Dist btw wrist and index finger MCP joint
+        param['joint'] *= D/d
 
-            # Translate to new origin at center of hip
-            param_bd['joint_3d'] -= center_hip
-
-            # Scale from relative to actual 3D joint in m
-            D = 0.55 # Note: Hardcode actual dist btw shoulder and hip joint as 0.55 m
-            d = np.linalg.norm(center_shoulder - center_hip) # Dist btw shoulder and hip joint (in relative 3D coor)
-            param_bd['joint_3d'] *= D/d
-
-        if param_fc['detect']:
-            param_fc['joint_3d'] = param_fc['joint'].copy()
-            
-            # Scale from relative to actual 3D joint in m
-            D = 0.07 # Note: Hardcode actual dist btw left and right eye as 0.07 m
-            d = np.linalg.norm(param_fc['joint_3d'][386] - param_fc['joint_3d'][159]) # Dist btw left and right eye (in relative 3D coor)
-            param_fc['joint_3d'] *= D/d
-
-            # Translate to face nose joint then add body nose joint
-            param_fc['joint_3d'] += -param_fc['joint_3d'][4] + param_bd['joint_3d'][0] # Nose joint             
-
-        if param_lh['class'] is not None:
-            # De-normalized 3D hand joint
-            param_lh['joint_3d'][:,0] = param_lh['joint'][:,0]*intrin['width'] -intrin['cx']
-            param_lh['joint_3d'][:,1] = param_lh['joint'][:,1]*intrin['height']-intrin['cy']
-            param_lh['joint_3d'][:,2] = param_lh['joint'][:,2]*intrin['width']
-
-            # Scale from relative to actual 3D joint in m
-            D = 0.08 # Note: Hardcode actual dist btw wrist and index finger MCP as 0.08 m
-            d = np.linalg.norm(param_lh['joint_3d'][0] - param_lh['joint_3d'][9]) # Dist btw wrist and index finger MCP joint
-            param_lh['joint_3d'] *= D/d
-
-            # Translate to original hand wrist then add body wrist joint
-            param_lh['joint_3d'] += -param_lh['joint_3d'][0] + param_bd['joint_3d'][15] # Left wrist joint
-
-        if param_rh['class'] is not None:
-            # De-normalized 3D hand joint
-            param_rh['joint_3d'][:,0] = param_rh['joint'][:,0]*intrin['width'] -intrin['cx']
-            param_rh['joint_3d'][:,1] = param_rh['joint'][:,1]*intrin['height']-intrin['cy']
-            param_rh['joint_3d'][:,2] = param_rh['joint'][:,2]*intrin['width']
-            
-            # Scale from relative to actual 3D joint in m
-            D = 0.08 # Note: Hardcode actual dist btw wrist and index finger MCP as 0.08 m
-            d = np.linalg.norm(param_rh['joint_3d'][0] - param_rh['joint_3d'][9]) # Dist btw wrist and index finger MCP joint
-            param_rh['joint_3d'] *= D/d
-
-            # Translate to original hand wrist then add body wrist joint
-            param_rh['joint_3d'] += -param_rh['joint_3d'][0] + param_bd['joint_3d'][16] # Right wrist joint
+        # Translate wrist to origin
+        param['joint'] -= param['joint'][0]
 
 
     def forward(self, img):
