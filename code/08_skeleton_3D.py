@@ -10,6 +10,7 @@
 import cv2
 import time
 import argparse
+# import numpy as np
 
 from utils_display import DisplayHand, DisplayBody, DisplayHolistic
 from utils_mediapipe import MediaPipeHand, MediaPipeBody, MediaPipeHolistic
@@ -51,6 +52,9 @@ elif mode=='holistic':
     pipe = MediaPipeHolistic(static_image_mode=False, model_complexity=1, intrin=intrin)
     disp = DisplayHolistic(draw3d=True, draw_camera=True, intrin=intrin)
 
+# log = False
+# count = 0
+# cap.set(cv2.CAP_PROP_POS_FRAMES, 900)
 prev_time = time.time()
 while cap.isOpened():
     ret, img = cap.read()
@@ -91,11 +95,20 @@ while cap.isOpened():
     disp.vis.poll_events()
     disp.vis.update_renderer()    
 
+    # if log:
+    #     img = (np.asarray(disp.vis.capture_screen_float_buffer())*255).astype(np.uint8)
+    #     img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+    #     cv2.imwrite('../data/image/'+str(count).zfill(2)+'.png', img)
+    #     count += 1
+
     key = cv2.waitKey(1)
     if key==27:
         break
     if key==ord('r'): # Press 'r' to reset camera view
         disp.camera.reset_view()
+    # if key==32: # Press spacebar to start logging images
+    #     log = not log
+    #     print('Log', log)
 
 pipe.pipe.close()
 cap.release()

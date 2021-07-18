@@ -437,7 +437,61 @@ class MediaPipeBody:
                 self.param['joint'][j,1] = lm.y
                 self.param['joint'][j,2] = lm.z
 
+            # Convert 3D joint to camera coordinate
+            self.convert_body_joint_to_camera_coor(self.param, self.intrin)
+
         return self.param
+
+
+    def convert_body_joint_to_camera_coor(self, param, intrin):
+        # MediaPipe version 0.8.6 onwards:
+        # Given real-world 3D joint centered at hip joint -> J_origin
+        # To estimate the 3D joint in camera coordinate   -> J_camera = J_origin + tvec,
+        # We need to find the unknown translation vector  -> tvec = [tx,ty,tz]
+        # Such that when J_camera is projected to the 2D image plane
+        # It matches the 2D keypoint locations
+
+        # Let's choose 4 keypoints (left/right shoulder/hip)
+        # Since they are more stable as compared to the limbs
+        # Each keypoints will form 2 eq, in total we have 8 eq 3 unknowns
+        # Since the equations are linear wrt [tx,ty,tz]
+        # We can solve the unknowns using linear algebra A.x = b, where x = [tx,ty,tz]
+
+        # Consider a single keypoint (pixel x) and joint (X,Y,Z)
+        # Using the perspective projection eq:
+        # (x - cx)/fx = (X + tx) / (Z + tz)
+        # Similarly for pixel y:
+        # (y - cy)/fy = (Y + ty) / (Z + tz)
+        # Rearranging the above linear equations by keeping constants to the right hand side:
+        # fx.tx - (x - cx).tz = -fx.X + (x - cx).Z
+        # fy.ty - (y - cy).tz = -fy.Y + (y - cy).Z
+        # Therefore, we can factor out the unknowns and form a matrix eq:
+        # [fx  0 (x - cx)][tx]   [-fx.X + (x - cx).Z]
+        # [ 0 fy (y - cy)][ty] = [-fy.Y + (y - cy).Z]
+        #                 [tz]
+
+        idx = [11,12,23,24] # Index of left/right shoulder/hip
+
+        A = np.zeros((4,2,3))
+        b = np.zeros((4,2))
+
+        A[:,0,0] = intrin['fx']
+        A[:,1,1] = intrin['fy']
+        A[:,0,2] = -(param['keypt'][idx,0] - intrin['cx'])
+        A[:,1,2] = -(param['keypt'][idx,1] - intrin['cy'])
+
+        b[:,0] = -intrin['fx'] * param['joint'][idx,0] \
+                 + (param['keypt'][idx,0] - intrin['cx']) * param['joint'][idx,2]
+        b[:,1] = -intrin['fy'] * param['joint'][idx,1] \
+                 + (param['keypt'][idx,1] - intrin['cy']) * param['joint'][idx,2]
+
+        A = A.reshape(-1,3) # [8,3]
+        b = b.flatten() # [8]
+
+        # Use the normal equation AT.A.x = AT.b to minimize the sum of the sq diff btw left and right sides
+        x = np.linalg.solve(A.T @ A, A.T @ b)
+        # Add tvec to all joints
+        param['joint'] += x
 
 
     def forward(self, img):

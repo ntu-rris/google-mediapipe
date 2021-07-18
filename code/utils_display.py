@@ -740,9 +740,9 @@ class DisplayBody:
             if draw_camera:
                 # Draw camera frustum
                 self.camera = DisplayCamera(self.vis, self.intrin)
-                frustum = self.camera.create_camera_frustum(depth=[1,2])
+                frustum = self.camera.create_camera_frustum(depth=[3,6])
                 # Draw 2D image plane in 3D space
-                self.mesh_img = self.camera.create_mesh_img(depth=2)
+                self.mesh_img = self.camera.create_mesh_img(depth=6)
                 # Add geometry to visualize
                 self.vis.add_geometry(frustum)
                 self.vis.add_geometry(self.mesh_img)
