@@ -443,7 +443,7 @@ class MediaPipeBody:
         return self.param
 
 
-    def convert_body_joint_to_camera_coor(self, param, intrin):
+    def convert_body_joint_to_camera_coor(self, param, intrin, scale_body=False, use_solvepnp=False):
         # MediaPipe version 0.8.6 onwards:
         # Given real-world 3D joint centered at hip joint -> J_origin
         # To estimate the 3D joint in camera coordinate   -> J_camera = J_origin + tvec,
@@ -470,28 +470,105 @@ class MediaPipeBody:
         # [ 0 fy (y - cy)][ty] = [-fy.Y + (y - cy).Z]
         #                 [tz]
 
+        # Scale body joint
+        if scale_body:
+            self.scale_body_joint(param)
+
         idx = [11,12,23,24] # Index of left/right shoulder/hip
 
-        A = np.zeros((4,2,3))
-        b = np.zeros((4,2))
+        if use_solvepnp:
+            # Method 1: OpenCV solvePnP
+            idx = [i for i in range(33)] # Need at least 6 points for solvePnP
 
-        A[:,0,0] = intrin['fx']
-        A[:,1,1] = intrin['fy']
-        A[:,0,2] = -(param['keypt'][idx,0] - intrin['cx'])
-        A[:,1,2] = -(param['keypt'][idx,1] - intrin['cy'])
+            fx, fy = self.intrin['fx'], self.intrin['fy']
+            cx, cy = self.intrin['cx'], self.intrin['cy']
+            intrin_mat = np.asarray([[fx,0,cx],[0,fy,cy],[0,0,1]])
+            dist_coeff = np.zeros(4)
 
-        b[:,0] = -intrin['fx'] * param['joint'][idx,0] \
-                 + (param['keypt'][idx,0] - intrin['cx']) * param['joint'][idx,2]
-        b[:,1] = -intrin['fy'] * param['joint'][idx,1] \
-                 + (param['keypt'][idx,1] - intrin['cy']) * param['joint'][idx,2]
+            ret, rvec, tvec = cv2.solvePnP(param['joint'][idx], param['keypt'][idx],
+                intrin_mat, dist_coeff)
 
-        A = A.reshape(-1,3) # [8,3]
-        b = b.flatten() # [8]
+            rmat = cv2.Rodrigues(rvec)[0]
+            param['joint'] = param['joint'] @ rmat.T + tvec[:,0]
 
-        # Use the normal equation AT.A.x = AT.b to minimize the sum of the sq diff btw left and right sides
-        x = np.linalg.solve(A.T @ A, A.T @ b)
-        # Add tvec to all joints
-        param['joint'] += x
+        else:
+            # Method 2:
+            A = np.zeros((len(idx),2,3))
+            b = np.zeros((len(idx),2))
+
+            A[:,0,0] = intrin['fx']
+            A[:,1,1] = intrin['fy']
+            A[:,0,2] = -(param['keypt'][idx,0] - intrin['cx'])
+            A[:,1,2] = -(param['keypt'][idx,1] - intrin['cy'])
+
+            b[:,0] = -intrin['fx'] * param['joint'][idx,0] \
+                     + (param['keypt'][idx,0] - intrin['cx']) * param['joint'][idx,2]
+            b[:,1] = -intrin['fy'] * param['joint'][idx,1] \
+                     + (param['keypt'][idx,1] - intrin['cy']) * param['joint'][idx,2]
+
+            A = A.reshape(-1,3) # [8,3]
+            b = b.flatten() # [8]
+
+            # Use the normal equation AT.A.x = AT.b to minimize the sum of the sq diff btw left and right sides
+            x = np.linalg.solve(A.T @ A, A.T @ b)
+            # Add tvec to all joints
+            param['joint'] += x
+
+
+    def scale_body_joint(self, param):
+        # Desired body dimension in meter
+        # Adapted from https://www.researchgate.net/figure/Dimensions-of-average-male-human-being-23_fig1_283532449
+        hip     = 0.14 # Width
+        trunk   = 0.51 # Length from hip to shoulder
+        arm     = 0.30 # Length
+        forearm = 0.27 # Length
+        thigh   = 0.46 # Length
+        leg     = 0.45 # Length
+
+        # Compute estimated body dimension
+        hip_        = np.linalg.norm(param['joint'][23] - param['joint'][24])
+        trunk_left  = np.linalg.norm(param['joint'][11] - param['joint'][23])
+        trunk_right = np.linalg.norm(param['joint'][12] - param['joint'][24])
+
+        arm_left     = np.linalg.norm(param['joint'][11] - param['joint'][13])
+        forearm_left = np.linalg.norm(param['joint'][13] - param['joint'][15])
+        thigh_left   = np.linalg.norm(param['joint'][23] - param['joint'][25])
+        leg_left     = np.linalg.norm(param['joint'][25] - param['joint'][27])
+
+        arm_right     = np.linalg.norm(param['joint'][12] - param['joint'][14])
+        forearm_right = np.linalg.norm(param['joint'][14] - param['joint'][16])
+        thigh_right   = np.linalg.norm(param['joint'][24] - param['joint'][26])
+        leg_right     = np.linalg.norm(param['joint'][26] - param['joint'][28])
+
+        # Perform scaling of estimated body joint to match desired dimension
+        joint = np.zeros_like(param['joint']) # Temp storage for joint
+        joint[[23,24]] = param['joint'][[23,24]] * hip / hip_
+        joint[11] = param['joint'][11] * trunk / trunk_left
+        joint[12] = param['joint'][12] * trunk / trunk_right
+
+        def scale_limb(param, idx1, idx2, len1, len2):
+            j1 = param['joint'][idx1]
+            j2 = param['joint'][idx2]
+            return (j2 - j1) * len1 / len2
+
+        joint[13] = joint[11] + scale_limb(param, 11, 13, arm, arm_left)
+        joint[14] = joint[12] + scale_limb(param, 12, 14, arm, arm_right)
+        joint[15] = joint[13] + scale_limb(param, 13, 15, forearm, forearm_left)
+        joint[16] = joint[14] + scale_limb(param, 14, 16, forearm, forearm_right)
+
+        joint[25] = joint[23] + scale_limb(param, 23, 25, thigh, thigh_left)
+        joint[26] = joint[24] + scale_limb(param, 24, 26, thigh, thigh_right)
+        joint[27] = joint[25] + scale_limb(param, 25, 27, leg, leg_left)
+        joint[28] = joint[26] + scale_limb(param, 26, 28, leg, leg_right)
+
+        # Ignore scaling of hand and feet joint
+        # simply translate to new wrist and ankle joint
+        joint[[17,19,21]] = param['joint'][[17,19,21]] - param['joint'][15] + joint[15]
+        joint[[18,20,22]] = param['joint'][[18,20,22]] - param['joint'][16] + joint[16]
+        joint[[29,31]] = param['joint'][[29,31]] - param['joint'][27] + joint[27]
+        joint[[30,32]] = param['joint'][[30,32]] - param['joint'][28] + joint[28]
+
+        param['joint'][11:] = joint[11:] # Note: Ignore scaling of face joints
 
 
     def forward(self, img):
