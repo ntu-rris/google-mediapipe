@@ -868,9 +868,9 @@ class DisplayHolistic:
             if draw_camera:
                 # Draw camera frustum
                 self.camera = DisplayCamera(self.vis, self.intrin)
-                frustum = self.camera.create_camera_frustum(depth=[1,2])
+                frustum = self.camera.create_camera_frustum(depth=[3,6])
                 # Draw 2D image plane in 3D space
-                self.mesh_img = self.camera.create_mesh_img(depth=2)
+                self.mesh_img = self.camera.create_mesh_img(depth=6)
                 # Add geometry to visualize
                 self.vis.add_geometry(frustum)
                 self.vis.add_geometry(self.mesh_img)
@@ -943,7 +943,7 @@ class DisplayCamera:
         self.pinhole.intrinsic = o3d.camera.PinholeCameraIntrinsic(
             self.intrin['width'], self.intrin['height'], 
             self.intrin['fx'], self.intrin['fy'], 
-            self.intrin['cx'], self.intrin['cy'])            
+            self.intrin['cx'], self.intrin['cy'])
 
 
     def reset_view(self):

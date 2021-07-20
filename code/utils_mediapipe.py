@@ -410,6 +410,8 @@ class MediaPipeBody:
                 'keypt'   : np.zeros((33,2)), # 2D keypt in image coordinate (pixel)
                 'joint'   : np.zeros((33,3)), # 3D joint in real world coordinate (m)
                 'visible' : np.zeros(33),     # Visibility: Likelihood [0,1] of being visible (present and not occluded) in the image
+                'rvec'    : np.zeros(3),           # Global rotation vector Note: this term is only used for solvepnp initialization
+                'tvec'    : np.asarray([0,0,1.0]), # Global translation vector (m) Note: Init z direc to some +ve dist (i.e. in front of camera), to prevent solvepnp from wrongly estimating z as -ve
                 'fps'     : -1, # Frame per sec
             }
 
@@ -443,7 +445,7 @@ class MediaPipeBody:
         return self.param
 
 
-    def convert_body_joint_to_camera_coor(self, param, intrin, scale_body=False, use_solvepnp=False):
+    def convert_body_joint_to_camera_coor(self, param, intrin, scale_body=False, use_solvepnp=True):
         # MediaPipe version 0.8.6 onwards:
         # Given real-world 3D joint centered at hip joint -> J_origin
         # To estimate the 3D joint in camera coordinate   -> J_camera = J_origin + tvec,
@@ -474,22 +476,22 @@ class MediaPipeBody:
         if scale_body:
             self.scale_body_joint(param)
 
-        idx = [11,12,23,24] # Index of left/right shoulder/hip
+        # idx = [11,12,23,24] # Index of left/right shoulder/hip
+        idx = [i for i in range(33)] # Use all landmarks
 
         if use_solvepnp:
             # Method 1: OpenCV solvePnP
-            idx = [i for i in range(33)] # Need at least 6 points for solvePnP
-
             fx, fy = self.intrin['fx'], self.intrin['fy']
             cx, cy = self.intrin['cx'], self.intrin['cy']
             intrin_mat = np.asarray([[fx,0,cx],[0,fy,cy],[0,0,1]])
             dist_coeff = np.zeros(4)
 
-            ret, rvec, tvec = cv2.solvePnP(param['joint'][idx], param['keypt'][idx],
-                intrin_mat, dist_coeff)
-
-            rmat = cv2.Rodrigues(rvec)[0]
-            param['joint'] = param['joint'] @ rmat.T + tvec[:,0]
+            ret, param['rvec'], param['tvec'] = cv2.solvePnP(
+                param['joint'][idx], param['keypt'][idx],
+                intrin_mat, dist_coeff, param['rvec'], param['tvec'],
+                useExtrinsicGuess=True)
+            # Add tvec to all joints
+            param['joint'] += param['tvec']
 
         else:
             # Method 2:
@@ -663,6 +665,8 @@ class MediaPipeHolistic:
                 'keypt'   : np.zeros((33,2)), # 2D keypt in image coordinate (pixel)
                 'joint'   : np.zeros((33,3)), # 3D joint in real world coordinate (m)
                 'visible' : np.zeros(33),     # Visibility: Likelihood [0,1] of being visible (present and not occluded) in the image
+                'rvec'    : np.zeros(3),           # Global rotation vector
+                'tvec'    : np.asarray([0,0,1.0]), # Global translation vector (m)
                 'fps'     : -1, # Frame per sec
             }
 
@@ -763,6 +767,9 @@ class MediaPipeHolistic:
                 self.param_bd['joint'][j,1] = lm.y
                 self.param_bd['joint'][j,2] = lm.z
 
+            # Convert 3D joint to camera coordinate
+            self.convert_body_joint_to_camera_coor(self.param_bd, self.intrin)
+
             # Translate to face nose joint to body nose joint
             self.param_fc['joint'] += self.param_bd['joint'][0] # Nose joint
 
@@ -803,6 +810,22 @@ class MediaPipeHolistic:
 
         # Translate wrist to origin
         param['joint'] -= param['joint'][0]
+
+
+    def convert_body_joint_to_camera_coor(self, param, intrin):
+        idx = [i for i in range(33)] # Use all landmarks
+
+        fx, fy = self.intrin['fx'], self.intrin['fy']
+        cx, cy = self.intrin['cx'], self.intrin['cy']
+        intrin_mat = np.asarray([[fx,0,cx],[0,fy,cy],[0,0,1]])
+        dist_coeff = np.zeros(4)
+
+        ret, param['rvec'], param['tvec'] = cv2.solvePnP(
+            param['joint'][idx], param['keypt'][idx],
+            intrin_mat, dist_coeff, param['rvec'], param['tvec'],
+            useExtrinsicGuess=True)
+        # Add tvec to all joints
+        param['joint'] += param['tvec']
 
 
     def forward(self, img):
