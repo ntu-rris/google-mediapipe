@@ -20,13 +20,13 @@ Attractiveness of Google MediaPipe as compared to other SOTA (e.g. [FrankMocap](
 * **ML Solutions**: Apart from face, hand, body and object pose estimations, MediaPipe offers an array of machine learning applications refer to their [github](https://github.com/google/mediapipe) for more details
 
 ## Features
-Latest [MediaPipe Python API version 0.8.6](https://pypi.org/project/mediapipe/) (Released 25 Jun 2021) features:
+Latest [MediaPipe Python API version 0.8.9](https://pypi.org/project/mediapipe/) (Released 4 Nov 2021) features:
 
 **Face Detect** (**2D** face detection)
 
 * [**Code**](https://google.github.io/mediapipe/solutions/face_detection) | [**Paper**](https://arxiv.org/abs/1907.05047) |  [**Presentation**](https://docs.google.com/presentation/d/1YCtASfnYyZtH-41QvnW5iZxELFnf0MF-pPWSLGj8yjQ/present?slide=id.g5bc8aeffdd_1_0) | [**Model Card**](https://drive.google.com/file/d/1d4-xJP9PVzOvMBDgIjz6NhvpnlG9_i0S/preview) | [**Model Card**](https://drive.google.com/file/d/1jpQt8TB1nMFQ49VSSBKdNEdQOygNRvCP/preview)
 
-**Face Mesh** (468 **3D** face landmarks)
+**Face Mesh** (468/478 **3D** face landmarks) **(NEW Refine landmarks)**
 
 * [**Blog**](https://ai.googleblog.com/2019/03/real-time-ar-self-expression-with.html) | [**Code**](https://google.github.io/mediapipe/solutions/face_mesh) | [**Paper**](https://arxiv.org/abs/1907.06724) |  [**Video**](https://www.youtube.com/watch?v=JNSXC3E0-s4) | [**Model Card**](https://drive.google.com/file/d/1QvwWNfFoweGVjsXF3DXzcrCnz-mx-Lha/view)
 
@@ -34,11 +34,11 @@ Latest [MediaPipe Python API version 0.8.6](https://pypi.org/project/mediapipe/)
 
 * [**Blog**](https://ai.googleblog.com/2019/08/on-device-real-time-hand-tracking-with.html) | [**Code**](https://google.github.io/mediapipe/solutions/hands) | [**Paper**](https://arxiv.org/abs/2006.10214) |  [**Video**](https://www.youtube.com/watch?v=I-UOrvxxXEk) | [**Model Card**](https://drive.google.com/file/d/1yiPfkhb4hSbXJZaSq9vDmhz24XVZmxpL/view)
 
-**Body Pose** (33 **3D** landmarks for whole body, 3 levels of model complexity) **(NEW real-world 3D coordinates)**
+**Body Pose** (33 **3D** landmarks for whole body, 3 levels of model complexity) **(NEW segmentation mask)**
 
 * [**Blog**](https://ai.googleblog.com/2020/08/on-device-real-time-body-pose-tracking.html) | [**Code**](https://google.github.io/mediapipe/solutions/pose) | [**Paper**](https://arxiv.org/abs/2006.10204) |  [**Video**](https://www.youtube.com/watch?v=YPpUOTRn5tA&feature=emb_logo) | [**Model Card**](https://drive.google.com/file/d/1zhYyUXhQrb_Gp0lKUFv1ADT3OCxGEQHS/view)
 
-**Holistic (Face + Hands + Body)** (A total of 543/535 landmarks: 468 face + 2 x 21 hands + 33/25 pose)
+**Holistic (Face + Hands + Body)** (A total of 543/535 landmarks: 468 face + 2 x 21 hands + 33/25 pose) **(NEW segmentation mask)**
 
 * [**Blog**](https://ai.googleblog.com/2020/12/mediapipe-holistic-simultaneous-face.html) | [**Code**](https://google.github.io/mediapipe/solutions/holistic#smooth_landmarks)
 

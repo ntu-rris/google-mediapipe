@@ -63,9 +63,10 @@ class DisplayFaceDetect:
 
 
 class DisplayFace:
-    def __init__(self, draw3d=False, intrin=None, max_num_faces=1, vis=None):
+    def __init__(self, draw3d=False, intrin=None, max_num_faces=1,
+        refine_landmarks=False, vis=None):
         self.max_num_faces = max_num_faces
-        self.nPt = 468 # Define number of keypoints/joints
+        self.nPt = 478 if refine_landmarks else 468 # Define number of keypoints/joints
         if intrin is None:
             self.intrin = intrin_default
         else:
@@ -82,7 +83,6 @@ class DisplayFace:
                 self.vis.create_window(
                     width=self.intrin['width'], height=self.intrin['height'])
                 self.vis.get_render_option().point_size = 3.0
-            joint = np.zeros((self.nPt,3))
 
             # Draw face mesh
             # .obj file adapted from https://github.com/google/mediapipe/tree/master/mediapipe/modules/face_geometry/data
@@ -186,7 +186,7 @@ class DisplayFace:
     def draw3d(self, param):
         for i in range(self.max_num_faces):
             if param[i]['detect']:
-                self.mesh.vertices = o3d.utility.Vector3dVector(param[i]['joint'])
+                self.mesh.vertices = o3d.utility.Vector3dVector(param[i]['joint'][:468]) # Note: Hardcode to 468 as can't find 3D mesh model of refined with 478 vertices
             else:
                 self.mesh.vertices = o3d.utility.Vector3dVector(np.zeros((self.nPt,3)))
 
@@ -427,7 +427,7 @@ class DisplayHand:
                         # cv2.putText(img, '%.1f, %.1f' % (p['visible'][i], p['presence'][i]),
                         #     (x, y), cv2.FONT_HERSHEY_SIMPLEX, 1, self.color[i])
                 
-		        # Label gesture
+                # Label gesture
                 if p['gesture'] is not None:
                     size = cv2.getTextSize(p['gesture'].upper(), 
                         # cv2.FONT_HERSHEY_SIMPLEX, 2, 2)[0]
@@ -823,7 +823,21 @@ class DisplayBody:
         # Label fps
         if p['fps']>0:
             cv2.putText(img, 'FPS: %.1f' % (p['fps']),
-                (0, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 2)                           
+                (0, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 2)
+
+        # Draw segmentation mask
+        if p['mask'] is not None:
+            # Extract segmentation mask
+            msk = p['mask'] # [h,w] float32 range from 0 to 1
+            msk = cv2.bilateralFilter(msk, 9, 75, 75) # Apply bilateral filter to smooth the low res mask
+            msk = np.stack((msk,) * 3, axis=-1) > 0.1 # Convert those pixel>thres to boolean
+
+            # Create background image
+            # bg_img = cv2.GaussianBlur(img,(55,55),0) # Blurred input image
+            bg_img = np.zeros(img.shape, dtype=np.uint8) # Black background
+
+            # Overlay segmentated img on background image
+            img = np.where(msk, img, bg_img)
 
         return img
 
@@ -842,7 +856,8 @@ class DisplayBody:
 
 
 class DisplayHolistic:
-    def __init__(self, draw3d=False, draw_camera=False, intrin=None, vis=None):
+    def __init__(self, draw3d=False, draw_camera=False, intrin=None,
+        refine_face_landmarks=False, vis=None):
         if intrin is None:
             self.intrin = intrin_default
         else:
@@ -860,7 +875,8 @@ class DisplayHolistic:
                     width=self.intrin['width'], height=self.intrin['height'])
                 self.vis.get_render_option().point_size = 8.0
 
-            self.disp_face = DisplayFace(draw3d=True, vis=self.vis, intrin=self.intrin)
+            self.disp_face = DisplayFace(draw3d=True, vis=self.vis,
+                refine_landmarks=refine_face_landmarks, intrin=self.intrin)
             self.disp_hand = DisplayHand(draw3d=True, vis=self.vis, intrin=self.intrin,
                 max_num_hands=2)
             self.disp_body = DisplayBody(draw3d=True, vis=self.vis, intrin=self.intrin)
@@ -878,7 +894,7 @@ class DisplayHolistic:
                 self.camera.reset_view()
 
         else:
-            self.disp_face = DisplayFace(draw3d=False)
+            self.disp_face = DisplayFace(draw3d=False, refine_landmarks=refine_face_landmarks)
             self.disp_hand = DisplayHand(draw3d=False, max_num_hands=2)
             self.disp_body = DisplayBody(draw3d=False, draw_camera=False)
 
@@ -895,7 +911,7 @@ class DisplayHolistic:
     def draw2d_(self, img, param):
         param_fc, param_lh, param_rh, param_bd = param
         self.disp_face.draw2d_(img, [param_fc])
-        self.disp_body.draw2d_(img, param_bd)
+        img = self.disp_body.draw2d_(img, param_bd)
         self.disp_hand.draw2d_(img, [param_lh, param_rh])
 
         return img

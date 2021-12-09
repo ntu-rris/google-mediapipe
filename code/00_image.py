@@ -29,8 +29,8 @@ if mode=='face_detect':
     disp = DisplayFaceDetect()
     file = '../data/sample/mona.png'
 elif mode=='face':
-    pipe = MediaPipeFace(static_image_mode=True, max_num_faces=1)
-    disp = DisplayFace(draw3d=True)
+    pipe = MediaPipeFace(static_image_mode=True, max_num_faces=1, refine_landmarks=True)
+    disp = DisplayFace(draw3d=True, refine_landmarks=True)
     file = '../data/sample/mona.png'
 elif mode=='hand':
     pipe = MediaPipeHand(static_image_mode=True, max_num_hands=1)
@@ -41,15 +41,15 @@ elif mode=='body':
     disp = DisplayBody(draw3d=True)
     file = '../data/sample/upper_limb4.png'
 elif mode=='holistic':
-    pipe = MediaPipeHolistic(static_image_mode=True, model_complexity=1)
-    disp = DisplayHolistic(draw3d=True)
+    pipe = MediaPipeHolistic(static_image_mode=True, model_complexity=1, refine_face_landmarks=True)
+    disp = DisplayHolistic(draw3d=True, refine_face_landmarks=True)
     file = '../data/sample/lower_limb4.png'
 else:
     print('Undefined mode only the following modes are available: \nface / hand / body / holistic')
     sys.exit()
 
 # Read in image (Note: You can change the file path to your own test image)
-img  = cv2.imread(file)
+img = cv2.imread(file)
 
 # # Preprocess image if necessary
 # img = cv2.resize(img, None, fx=0.5, fy=0.5)

@@ -98,7 +98,7 @@ class MediaPipeFaceDetect:
 
 
 class MediaPipeFace:
-    def __init__(self, static_image_mode=True, max_num_faces=1):
+    def __init__(self, static_image_mode=True, max_num_faces=1, refine_landmarks=True):
         # Access MediaPipe Solutions Python API
         mp_faces = mp.solutions.face_mesh
 
@@ -111,7 +111,11 @@ class MediaPipeFace:
         
         # max_num_faces:
         #   Maximum number of faces to detect
-        
+
+        # refine_landmarks
+        #   Set to True to further refine the landmark coordinates around the eyes and lips
+        #   and output additional landmarks around the irises. Default to false.
+
         # min_detection_confidence:
         #   Confidence value [0,1] from face detection model
         #   for detection to be considered successful
@@ -127,16 +131,18 @@ class MediaPipeFace:
         self.pipe = mp_faces.FaceMesh(
             static_image_mode=static_image_mode,
             max_num_faces=max_num_faces,
+            refine_landmarks=refine_landmarks,
             min_detection_confidence=0.5,
             min_tracking_confidence=0.5)
 
         # Define face parameter
         self.param = []
         for i in range(max_num_faces):
+            num = 478 if refine_landmarks else 468
             p = {
                 'detect'  : False, # Boolean to indicate whether a face is detected
-                'keypt'   : np.zeros((468,2)), # 2D keypt in image coordinate (pixel)
-                'joint'   : np.zeros((468,3)), # 3D joint in relative coordinate
+                'keypt'   : np.zeros((num,2)), # 2D keypt in image coordinate (pixel)
+                'joint'   : np.zeros((num,3)), # 3D joint in relative coordinate
                 'fps'     : -1, # Frame per sec
             }
             self.param.append(p)
@@ -360,11 +366,14 @@ class MediaPipeHand:
 
 
 class MediaPipeBody:
-    def __init__(self, static_image_mode=True, model_complexity=1, intrin=None):
+    def __init__(self, static_image_mode=True, model_complexity=1,
+        enable_segmentation=True, intrin=None):
         if intrin is None:
             self.intrin = intrin_default
         else:
             self.intrin = intrin
+
+        self.enable_segmentation = enable_segmentation
 
         # Access MediaPipe Solutions Python API
         mp_body = mp.solutions.pose
@@ -382,8 +391,16 @@ class MediaPipeBody:
         #   go up with the model complexity. Default to 1.
         
         # smooth_landmarks:
-        #   If set to true, filters pose landmarks across different input images
-        #   to reduce jitter, but ignored if static_image_mode is also set to true
+        #   If set to True, filters pose landmarks across different input images
+        #   to reduce jitter, but ignored if static_image_mode is also set to True
+
+        # enable_segmentation
+        #   Set to True to generate segmentation mask. Default to false.
+
+        # smooth_segmentation
+        #   Set to True to filter segmentation masks across different input images
+        #   to reduce jitter. Ignored if enable_segmentation is false or static_image_mode is True.
+        #   Default to True.
 
         # min_detection_confidence:
         #   Confidence value [0,1] from person detection model
@@ -395,12 +412,14 @@ class MediaPipeBody:
         #   or otherwise person detection will be invoked automatically on the next input image.
         #   Setting it to a higher value can increase robustness of the solution, 
         #   at the expense of a higher latency. 
-        #   Ignored if static_image_mode is true, where person detection simply runs on every image.
+        #   Ignored if static_image_mode is True, where person detection simply runs on every image.
 
         self.pipe = mp_body.Pose(
             static_image_mode=static_image_mode,
             model_complexity=model_complexity,
             smooth_landmarks=True,
+            enable_segmentation=enable_segmentation,
+            smooth_segmentation=True,
             min_detection_confidence=0.5,
             min_tracking_confidence=0.5)
 
@@ -412,6 +431,7 @@ class MediaPipeBody:
                 'visible' : np.zeros(33),     # Visibility: Likelihood [0,1] of being visible (present and not occluded) in the image
                 'rvec'    : np.zeros(3),           # Global rotation vector Note: this term is only used for solvepnp initialization
                 'tvec'    : np.asarray([0,0,1.0]), # Global translation vector (m) Note: Init z direc to some +ve dist (i.e. in front of camera), to prevent solvepnp from wrongly estimating z as -ve
+                'mask'    : None, # Binary segmentation mask 0:Backgnd, 1:Human
                 'fps'     : -1, # Frame per sec
             }
 
@@ -438,6 +458,10 @@ class MediaPipeBody:
                 self.param['joint'][j,0] = lm.x
                 self.param['joint'][j,1] = lm.y
                 self.param['joint'][j,2] = lm.z
+
+            # Segmentation mask
+            if self.enable_segmentation:
+                self.param['mask'] = result.segmentation_mask
 
             # Convert 3D joint to camera coordinate
             self.convert_body_joint_to_camera_coor(self.param, self.intrin)
@@ -481,8 +505,8 @@ class MediaPipeBody:
 
         if use_solvepnp:
             # Method 1: OpenCV solvePnP
-            fx, fy = self.intrin['fx'], self.intrin['fy']
-            cx, cy = self.intrin['cx'], self.intrin['cy']
+            fx, fy = intrin['fx'], intrin['fy']
+            cx, cy = intrin['cx'], intrin['cy']
             intrin_mat = np.asarray([[fx,0,cx],[0,fy,cy],[0,0,1]])
             dist_coeff = np.zeros(4)
 
@@ -518,6 +542,13 @@ class MediaPipeBody:
 
 
     def scale_body_joint(self, param):
+        # TODO: Try normalize body joint using spherical coor
+        # Something like Pose Locality Constrained Representation for 3D Human Pose Reconstruction
+        # Section onPose Data Normalization
+        # https://cse.sc.edu/~fan23/doc/plcr_eccv2014.pdf
+        # Convert cartesian to spherical
+        # Convert spherical to cartesian
+
         # Desired body dimension in meter
         # Adapted from https://www.researchgate.net/figure/Dimensions-of-average-male-human-being-23_fig1_283532449
         hip     = 0.14 # Width
@@ -587,11 +618,14 @@ class MediaPipeBody:
 
 
 class MediaPipeHolistic:
-    def __init__(self, static_image_mode=True, model_complexity=1, intrin=None):
+    def __init__(self, static_image_mode=True, model_complexity=1,
+        enable_segmentation=True, refine_face_landmarks=True, intrin=None):
         if intrin is None:
             self.intrin = intrin_default
         else:
             self.intrin = intrin
+
+        self.enable_segmentation = enable_segmentation
 
         # Access MediaPipe Solutions Python API
         mp_holisitic = mp.solutions.holistic
@@ -612,6 +646,18 @@ class MediaPipeHolistic:
         #   If set to true, filters pose landmarks across different input images
         #   to reduce jitter, but ignored if static_image_mode is also set to true
 
+        # enable_segmentation
+        #   Set to True to generate segmentation mask. Default to false.
+
+        # smooth_segmentation
+        #   Set to True to filter segmentation masks across different input images
+        #   to reduce jitter. Ignored if enable_segmentation is false or static_image_mode is True.
+        #   Default to True.
+
+        # refine_face_landmarks
+        #   Set to True to further refine the landmark coordinates around the eyes and lips
+        #   and output additional landmarks around the irises. Default to false.
+
         # min_detection_confidence:
         #   Confidence value [0,1] from person detection model
         #   for detection to be considered successful
@@ -628,14 +674,18 @@ class MediaPipeHolistic:
             static_image_mode=static_image_mode,
             model_complexity=model_complexity,
             smooth_landmarks=True,
+            enable_segmentation=enable_segmentation,
+            smooth_segmentation=True,
+            refine_face_landmarks=refine_face_landmarks,
             min_detection_confidence=0.5,
             min_tracking_confidence=0.5)
 
         # Define face parameter
+        num = 478 if refine_face_landmarks else 468
         self.param_fc = {
                 'detect'  : False, # Boolean to indicate whether a face is detected
-                'keypt'   : np.zeros((468,2)), # 2D keypt in image coordinate (pixel)
-                'joint'   : np.zeros((468,3)), # 3D joint in camera coordinate (m)
+                'keypt'   : np.zeros((num,2)), # 2D keypt in image coordinate (pixel)
+                'joint'   : np.zeros((num,3)), # 3D joint in camera coordinate (m)
                 'fps'     : -1, # Frame per sec
             }
 
@@ -667,6 +717,7 @@ class MediaPipeHolistic:
                 'visible' : np.zeros(33),     # Visibility: Likelihood [0,1] of being visible (present and not occluded) in the image
                 'rvec'    : np.zeros(3),           # Global rotation vector
                 'tvec'    : np.asarray([0,0,1.0]), # Global translation vector (m)
+                'mask'    : None, # Binary segmentation mask 0:Backgnd, 1:Human
                 'fps'     : -1, # Frame per sec
             }
 
@@ -767,6 +818,10 @@ class MediaPipeHolistic:
                 self.param_bd['joint'][j,1] = lm.y
                 self.param_bd['joint'][j,2] = lm.z
 
+            # Segmentation mask
+            if self.enable_segmentation:
+                self.param_bd['mask'] = result.segmentation_mask
+
             # Convert 3D joint to camera coordinate
             self.convert_body_joint_to_camera_coor(self.param_bd, self.intrin)
 
@@ -815,8 +870,8 @@ class MediaPipeHolistic:
     def convert_body_joint_to_camera_coor(self, param, intrin):
         idx = [i for i in range(33)] # Use all landmarks
 
-        fx, fy = self.intrin['fx'], self.intrin['fy']
-        cx, cy = self.intrin['cx'], self.intrin['cy']
+        fx, fy = intrin['fx'], intrin['fy']
+        cx, cy = intrin['cx'], intrin['cy']
         intrin_mat = np.asarray([[fx,0,cx],[0,fy,cy],[0,0,1]])
         dist_coeff = np.zeros(4)
 
