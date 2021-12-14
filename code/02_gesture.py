@@ -33,6 +33,7 @@ cap = cv2.VideoCapture(0) # By default webcam is index 0
 gest = GestureRecognition(mode)
 
 counter = 0
+class_label = 0
 while cap.isOpened():
     ret, img = cap.read()
     if not ret:
@@ -57,14 +58,16 @@ while cap.isOpened():
     key = cv2.waitKey(1)
     if key==27:
         break
+    if key==ord('c') and (param[0]['class'] is not None) and (mode=='train'):
+        # Press 'c' to change class label
+        # 'fist','one','two','three','four','five','six',
+        # 'rock','spiderman','yeah','ok',
+        class_label = (class_label + 1) % 11
+        print('Change to gesture', list(gest.gesture)[class_label])
     if key==32 and (param[0]['class'] is not None) and (mode=='train'):
         # Press spacebar to log training data
-        # Note: Need to manually change class label
-        # 'fist','one','two','three','four','five','six',
-        # 'rock','spiderman',
-        # 'yeah','ok',
-        gest.train(param[0]['angle'], gest.gesture['fist'])
-        print('Saved', counter) # Log around 10 for each class
+        gest.train(param[0]['angle'], class_label)
+        print('Saved', list(gest.gesture)[class_label], 'counter', counter) # Log around 10 for each class
         counter += 1
     if key==32 and (param[0]['class'] is not None) and (mode=='eval'):
         cv2.waitKey(0) # Pause display until user press any key        
